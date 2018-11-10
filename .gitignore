@@ -2,3 +2,6 @@
 /papers
 
 /.idea
+
+# Cashe
+*.pyc
