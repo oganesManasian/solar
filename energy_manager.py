@@ -1,5 +1,4 @@
 import math
-from functools import reduce
 import pandas as pd
 import matplotlib.pyplot as plt
 from track import Track
@@ -14,7 +13,7 @@ BATTER_CHARGE_MAX = 5100 * 3600
 BATTER_CHARGE_MIN = 0  # W * h
 EFFICIENCY_BATTERY = 0.98
 # Environment
-SOLAR_RADIATION = 500  # W / m²  # TODO add modeling
+# SOLAR_RADIATION = 500  # W / m²  # Unnecessary more
 GRAVITY_ACCELERATION = 9.81
 FRICTION_RESISTANCE_RATE = 0.0025
 AIR_DENSITY = 1.18
@@ -28,64 +27,6 @@ EFFICIENCY_INCOME = 0.2 * 0.985
 EFFICIENCY_OUTCOME = 0.94  # TODO add modeling
 
 
-def loss_func(section_speeds: list, track: Track):
-    loss = 0.0
-
-    for i in range(len(track.sections)):
-        section_time = track.sections.loc[i].length / section_speeds[i]
-        loss += section_time
-
-    energy_levels = compute_energy_levels(track, section_speeds)
-    energy_level_penalty = compute_energy_level_penalty(energy_levels)
-    # print("Loss only time", loss)
-    # print("Loss only penalty", energy_level_penalty)
-    loss += energy_level_penalty  # TODO Tune: add coefficient
-
-    return loss
-
-
-def compute_energy_level_penalty(energy_levels: list):
-    energy_levels_in_percents = list(map(get_energy_level_in_percents, energy_levels))
-    # Starting from 1 due to full charge of battery at beginning of race
-    return sum([penalty_func_1(x) for x in energy_levels_in_percents[1:]])
-
-
-def compute_energy_level_penalty_fast(energy_levels: list):
-    """Computing penalties with discontinuous penalty function
-        Works faster than compute_energy_level_penalty"""
-    energy_levels_in_percents = list(map(get_energy_level_in_percents, energy_levels))
-
-    penalty_sum = 0.0
-
-    below_level = list(filter(lambda x: x < 0, energy_levels_in_percents))
-    below_level_penalty = list(map(lambda x: abs(x) ** 3, below_level))
-    penalty_sum += reduce(lambda x, y: x + y, below_level_penalty, 0)
-
-    above_level = list(filter(lambda x: x > 100, energy_levels_in_percents))
-    above_level_penalty = list(map(lambda x: abs(x - 100) ** 3, above_level))
-    penalty_sum += reduce(lambda x, y: x + y, above_level_penalty, 0)
-    return penalty_sum
-
-
-def get_energy_level_in_percents(energy_level_wt):
-    return energy_level_wt / BATTER_CHARGE_MAX * 100
-
-
-def penalty_func_1(x):
-    """Continuous function for computing penalties for violation of task conditions"""
-    return 10 * (1 / 50 * x - 1) ** 20
-
-
-def penalty_func_2(x):
-    """Discontinuous function for computing penalties for violation of task conditions"""
-    if x < 0:
-        return abs(x) ** 3
-    elif x > 100:
-        return abs(x - 100 ** 3)
-    else:
-        return 0
-
-
 def compute_energy_levels(track: Track, section_speeds: list):
     """Computes energy level of each sector"""
     energy_levels = [BATTER_CHARGE_MAX]
@@ -93,7 +34,6 @@ def compute_energy_levels(track: Track, section_speeds: list):
     for i in range(len(track.sections)):
         energy_income = compute_energy_income(section_speeds[i],
                                               track.sections.loc[i].solar_radiation[hour],
-                                              # SOLAR_RADIATION,  # TODO pass from track.sections.loc[i].solar_radiation
                                               VEHICLE_PANEL_AREA,
                                               track.sections.loc[i].slope_angle,
                                               track.sections.loc[i].length,
@@ -119,6 +59,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
     energy_levels = [BATTER_CHARGE_MAX]
     energy_incomes = [0]
     energy_outcomes = [0]
+    hour = 15  # TODO calculate using section length and speeds
 
     model_params = pd.DataFrame(columns=["solar_radiation",
                                          "vehicle_panel_area",
@@ -137,7 +78,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
 
     for i in range(len(track.sections)):
         energy_income = compute_energy_income(section_speeds[i],
-                                              SOLAR_RADIATION,  # TODO pass from track.sections.loc[i].solar_radiation
+                                              track.sections.loc[i].solar_radiation[hour],
                                               VEHICLE_PANEL_AREA,
                                               track.sections.loc[i].slope_angle,
                                               track.sections.loc[i].length,
@@ -160,7 +101,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
         energy_level = energy_levels[-1] + (energy_income - energy_outcome) * EFFICIENCY_BATTERY
         energy_levels.append(energy_level)
 
-        model_params.loc[len(model_params)] = [SOLAR_RADIATION,
+        model_params.loc[len(model_params)] = [track.sections.loc[i].solar_radiation[hour],
                                                VEHICLE_PANEL_AREA,
                                                track.sections.loc[i].slope_angle,
                                                track.sections.loc[i].length,
@@ -179,6 +120,10 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
             "incomes": energy_incomes,
             "outcomes": energy_outcomes,
             "params": model_params}
+
+
+def get_energy_level_in_percents(energy_level_wt):
+    return energy_level_wt / BATTER_CHARGE_MAX * 100
 
 
 def draw_energy_levels(energy_levels: list, energy_incomes: list, energy_outcomes: list):
@@ -254,10 +199,6 @@ def compute_energy_outcome(section_speed,
     work_motion = total_force * section_length / efficiency_outcome
     work_equipment = equipment_power * section_time
     energy_outcome = work_motion + work_equipment
-
-    # energy_motion = total_force * section_length
-    # energy_equipment = equipment_power * section_length / section_speed
-    # energy_outcome = energy_motion * efficiency_outcome + energy_equipment
     return energy_outcome
 
 

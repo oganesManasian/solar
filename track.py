@@ -144,7 +144,7 @@ class Track:
         for i in range(len(self.sections)):
             latitude, longitude = self.sections.iloc[i].coordinates[0], self.sections.iloc[i].coordinates[1]
 
-            if net_available:
+            if False: #net_available:  # TODO turn on check
                 cloudiness = get_weather_params_owm(latitude, longitude)["clouds"]
             else:
                 cloudiness = 0  # TODO Tune default parameter
