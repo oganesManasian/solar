@@ -113,7 +113,7 @@ class Track:
                 x = m2deg(section_start[0])
                 y = m2deg(section_start[1])
                 z = section_start[2]
-                coordinates = list(map(m2deg, section_start))  # TODO make more clear de2m and reverse translations
+                # coordinates = list(map(m2deg, section_start))  # TODO make more clear de2m and reverse translations
                 self.sections.loc[len(self.sections)] = ([section_dist, section_dist_sum, previous_slope_angle,
                                                           [x, y, z], None, None])
 
@@ -153,27 +153,26 @@ class Track:
             # TODO compute real value using cloudiness
             self.sections.at[i, "solar_radiation"] = compute_solar_radiation(latitude, day)
 
-
     def draw_track_xy(self, title="Track XY"):
         if self.track_points is None:
             print("Track points are not defined")
             return
 
-        X = []
-        Y = []
+        x = []
+        y = []
         for i in range(len(self.track_points)):
-            X.append(self.track_points[i][0])
-            Y.append(self.track_points[i][1])
+            x.append(self.track_points[i][0])
+            y.append(self.track_points[i][1])
 
         plt.figure()
         plt.title(title)
         plt.xlabel("X")
         plt.ylabel("Y")
         plt.grid()
-        plt.plot(X, Y)
-        plt.plot(X[0], Y[0], "go", label="start")
-        plt.plot(X[1:-1], Y[1:-1], "yo")
-        plt.plot(X[-1], Y[-1], "ro", label="end")
+        plt.plot(x, y)
+        plt.plot(x[0], y[0], "go", label="start")
+        plt.plot(x[1:-1], y[1:-1], "yo")
+        plt.plot(x[-1], y[-1], "ro", label="end")
         plt.legend()
         plt.show()
 

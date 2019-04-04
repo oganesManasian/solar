@@ -1,6 +1,7 @@
 import time
 import requests
 
+
 def timeit(method):
     def timed(*args, **kwards):
         start_time = time.time()

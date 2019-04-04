@@ -4,7 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from track import Track
 from utils import nonnegative, print_res_if_debug
-from environment_data import compute_solar_radiation, get_weather_params_owm
 
 DEBUG_FUNC_RESULTS = False
 
@@ -193,8 +192,8 @@ def draw_energy_levels(energy_levels: list, energy_incomes: list, energy_outcome
     violation_points = [(x + 1, y) for (x, y) in enumerate(energy_levels[1:])
                         if not 0 < get_energy_level_in_percents(y) < 100]
     if len(violation_points) > 0:
-        X, Y = zip(*violation_points)
-        plt.plot(X, Y, "ro", label="Violations")
+        x, y = zip(*violation_points)
+        plt.plot(x, y, "ro", label="Violations")
 
     plt.plot(range(len(energy_incomes)), energy_incomes, "g-", label='Energy income')
 

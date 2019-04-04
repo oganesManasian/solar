@@ -1,5 +1,4 @@
 from scipy.optimize import minimize
-import numpy as np
 from skopt import gp_minimize
 from utils import timeit
 
@@ -28,10 +27,6 @@ def minimize_scipy(func, x0, args=None, tol=1e-3, print_info=False):
 
 
 def minimize_scikit(func, x0):
-    #res = gp_minimize(func, [(-2.0, 2.0)])
-    #return res
+    # res = gp_minimize(func, [(-2.0, 2.0)])
+    # return res
     return None
-
-
-
-
