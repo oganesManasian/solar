@@ -7,28 +7,7 @@ from loss_func import loss_func
 # Load race track
 track = track.Track()
 track.load_track_from_mat("data_tracks.mat")
-
 # track.draw_track_altitudes("Track after preprocessing")
-
-# import copy
-# for dim in [5 + i * 2 for i in range(23)]:
-#     print("-----------{}------------".format(dim))
-#     cur_track = copy.deepcopy(track)
-#     cur_track.sections = cur_track.sections[0:dim]
-#
-#     # Optimize speed
-#     INIT_SPEED = 72/3.6  # 20 m/s
-#     init_speeds = [INIT_SPEED] * len(cur_track.sections)
-#     print("Init loss:", energy_manager.loss_func(init_speeds, cur_track))
-#
-#     optimal_speeds = optimization_methods.minimize_scipy(energy_manager.loss_func,
-#                                                          init_speeds,
-#                                                          args=(cur_track),
-#                                                          tol=1e-6)
-#     print("Optimization result:", optimal_speeds)
-
-
-track.sections = track.sections[0:5]  # Test on small track # TODO delete
 
 # Optimize speed
 INIT_SPEED = 72 / 3.6  # 20 m/s
@@ -37,6 +16,8 @@ print("Init loss:", loss_func(init_speeds, track))
 
 optimal_speeds = optimization_methods.minimize(loss_func,
                                                init_speeds,
+                                               lib="scipy",
+                                               method="L-BFGS-B",
                                                args=(track),
                                                tol=1e-3,
                                                print_info=True)
@@ -46,12 +27,12 @@ print("Optimization result:", optimal_speeds)
 # Solution analysis
 speeds = list(optimal_speeds[:])
 speeds.append(speeds[-1])
-plt.plot(range(len(speeds)), speeds, 'bo')
+# plt.plot(range(len(speeds)), speeds, 'bo')
 plt.step(range(len(speeds)), speeds, where='post')
 plt.grid()
 plt.title("Optimal speed")
 plt.xlabel("Sector №")
-plt.xticks(range(len(optimal_speeds)))
+plt.xticks(range(len(optimal_speeds)), rotation=90)
 plt.ylabel("Speed (m/s)")
 plt.show()
 

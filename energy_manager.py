@@ -144,7 +144,7 @@ def draw_energy_levels(energy_levels: list, energy_incomes: list, energy_outcome
 
     plt.plot(range(len(energy_outcomes)), energy_outcomes, "r-", label='Energy outcome')
 
-    plt.xticks(range(len(energy_levels)))
+    plt.xticks(range(len(energy_levels)), rotation=90)
     plt.legend()
     plt.grid()
     plt.show()

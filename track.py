@@ -151,7 +151,8 @@ class Track:
             self.sections.at[i, "cloudiness"] = [cloudiness] * 24  # each hour of day
 
             # TODO compute real value using cloudiness
-            self.sections.at[i, "solar_radiation"] = compute_solar_radiation(latitude, day)
+            # self.sections.at[i, "solar_radiation"] = compute_solar_radiation(latitude, day)
+            self.sections.at[i, "solar_radiation"] = [1000] * 24  # TODO delete
 
     def draw_track_xy(self, title="Track XY"):
         if self.track_points is None:
