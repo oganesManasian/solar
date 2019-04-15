@@ -8,6 +8,12 @@ from loss_func import loss_func
 track = track.Track()
 track.load_track_from_mat("data_tracks.mat")
 # track.draw_track_altitudes("Track after preprocessing")
+# track.sections = track.sections[:10]  # Taking only small part of track for tests
+
+# Test that optimization is possible
+speeds_test = [1] * len(track.sections)
+energy_levels_test = energy_manager.compute_energy_levels(track, speeds_test)
+assert (energy_levels_test[-1] >= 0), "Too little energy to cover the distance!"
 
 # Optimize speed
 INIT_SPEED = 72 / 3.6  # 20 m/s
@@ -22,7 +28,7 @@ optimal_speeds = optimization_methods.minimize(loss_func,
                                                tol=1e-3,
                                                print_info=True)
 print("Optimization result:", optimal_speeds)
-# print("Final loss:", energy_manager.loss_func(optimal_speeds, track))
+print("Final loss:", loss_func(optimal_speeds, track))
 
 # Solution analysis
 speeds = list(optimal_speeds[:])
@@ -40,5 +46,7 @@ model_data = energy_manager.compute_energy_levels_full(track, optimal_speeds)
 energy_manager.draw_energy_levels(energy_levels=model_data["levels"],
                                   energy_incomes=model_data["incomes"],
                                   energy_outcomes=model_data["outcomes"])
+
+# Save params log
 model_params = model_data["params"]
 model_params.to_csv("model_params.csv", sep=";")

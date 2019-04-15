@@ -20,7 +20,7 @@ def minimize_scipy(func, x0, method="BFGS", args=None, tol=1e-3, print_info=Fals
         print("Optimization was successful?", res.success)
         if not res.success:
             print(res.message)
-        print("Objective function value:", res.fun)
+        # print("Objective function value:", res.fun)
         print("Made iterations", res.nit)
         # print("X", res.x) Because it is already printed in main
     return res.x

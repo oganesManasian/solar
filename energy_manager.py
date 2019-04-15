@@ -66,6 +66,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                          "section_slope_angle",
                                          "section_length",
                                          "efficiency_income",
+                                         "energy_income",
                                          "air_density",
                                          "vehicle_front_area",
                                          "frontal_density_rate",
@@ -74,6 +75,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                          "friction_resistance_rate",
                                          "vehicle_equipment_power",
                                          "efficiency_outcome",
+                                         "energy_outcome",
                                          "section_speed"])
 
     for i in range(len(track.sections)):
@@ -106,6 +108,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                                track.sections.loc[i].slope_angle,
                                                track.sections.loc[i].length,
                                                EFFICIENCY_INCOME,
+                                               energy_income,
                                                AIR_DENSITY,
                                                VEHICLE_FRONT_AREA,
                                                FRONTAL_DENSITY_RATE,
@@ -114,6 +117,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                                FRICTION_RESISTANCE_RATE,
                                                VEHICLE_EQUIPMENT_POWER,
                                                EFFICIENCY_OUTCOME,
+                                               energy_outcome,
                                                section_speeds[i]]
 
     return {"levels": energy_levels,
