@@ -8,7 +8,7 @@ from loss_func import loss_func
 track = track.Track()
 track.load_track_from_mat("data_tracks.mat")
 # track.draw_track_altitudes("Track after preprocessing")
-# track.sections = track.sections[:10]  # Taking only small part of track for tests
+# track.sections = track.sections[:10]  # Taking only small part of track for fast tests
 
 # Test that optimization is possible
 speeds_test = [1] * len(track.sections)
@@ -22,7 +22,6 @@ print("Init loss:", loss_func(init_speeds, track))
 
 optimal_speeds = optimization_methods.minimize(loss_func,
                                                init_speeds,
-                                               lib="scipy",
                                                method="L-BFGS-B",
                                                args=(track),
                                                tol=1e-3,
@@ -40,6 +39,7 @@ plt.title("Optimal speed")
 plt.xlabel("Sector №")
 plt.xticks(range(len(optimal_speeds)), rotation=90)
 plt.ylabel("Speed (m/s)")
+plt.savefig("Optimal speed.png")  # TODO refactor
 plt.show()
 
 model_data = energy_manager.compute_energy_levels_full(track, optimal_speeds)

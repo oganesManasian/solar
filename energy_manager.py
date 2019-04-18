@@ -27,6 +27,17 @@ EFFICIENCY_INCOME = 0.2 * 0.985
 EFFICIENCY_OUTCOME = 0.94  # TODO add modeling
 
 
+def compute_time(drive_calendar, start_day, start_hour, track, section_number):
+    """Computes current time (day and hour) on chosen section using information about
+    1) Driving calendar - hours when it is possible to drive
+    Format:
+    Race day number: [Begin of driving hour, End of driving hour]
+    2) Start time (day and hour) for race
+    3) Length and speed info about sections of track
+    4) Number of section which is considering"""
+    pass
+
+
 def compute_energy_levels(track: Track, section_speeds: list):
     """Computes energy level of each sector"""
     energy_levels = [BATTER_CHARGE_MAX]
@@ -151,6 +162,7 @@ def draw_energy_levels(energy_levels: list, energy_incomes: list, energy_outcome
     plt.xticks(range(len(energy_levels)), rotation=90)
     plt.legend()
     plt.grid()
+    plt.savefig("Energy flow.png")  # TODO refactor
     plt.show()
 
 

@@ -1,8 +1,10 @@
 from energy_manager import compute_energy_levels, get_energy_level_in_percents
 from track import Track
 
+MAX_SPEED = 40
 
-def loss_func(section_speeds: list, track: Track):
+
+def loss_func(section_speeds: list, track: Track, compute_only_penalty=False):
     """Computes loss function"""
     loss = 0.0
 
@@ -10,16 +12,25 @@ def loss_func(section_speeds: list, track: Track):
         section_time = track.sections.loc[i].length / section_speeds[i]
         loss += section_time
 
+    total_penalty = compute_total_penalty(section_speeds, track)
+
+    if compute_only_penalty:
+        return total_penalty
+    else:
+        return loss + total_penalty
+
+
+def compute_total_penalty(section_speeds: list, track: Track):
+    """Computes total penalty according to energy levels and section speeds"""
     energy_levels = compute_energy_levels(track, section_speeds)
     energy_level_penalty = compute_energy_level_penalty(energy_levels)
     speed_penalty = compute_speed_penalty(section_speeds)
-    # print("Loss: Only time: %5.2f Only penalty: %5.2f" % (loss, energy_level_penalty + speed_penalty))
-    loss += energy_level_penalty + speed_penalty
-    return loss
+    total_penalty = energy_level_penalty + speed_penalty
+    return total_penalty
 
 
 def compute_speed_penalty(speeds: list):
-    penalty_func = box_penalty_func_factory(0, 25)
+    penalty_func = box_penalty_func_factory(0, MAX_SPEED)
     return sum([penalty_func(x) for x in speeds])
 
 
@@ -52,7 +63,7 @@ def penalty_func_1(x, koef=20, deg=30):
     return koef * (1 / 50 * x - 1) ** deg
 
 
-def penalty_func_2(x, deg=3):
+def penalty_func_2(x, koef=1, deg=3):  # TODO tune koef parameter
     """Discontinuous penalty function for box constraints: 0 < x < 100"""
-    return max(max(0, -x), max(0, x - 100)) ** deg
+    return koef * max(max(0, -x), max(0, x - 100)) ** deg
 

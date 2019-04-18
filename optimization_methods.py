@@ -4,18 +4,10 @@ from utils import timeit
 
 
 @timeit
-def minimize(func, x0, lib="scipy", method="BFGS", args=None, tol=1e-3, print_info=False):
-    if lib == "scipy":
-        return minimize_scipy(func, x0, method=method, args=args, tol=tol, print_info=print_info)
-    elif lib == "scikit":
-        return minimize_scikit(func, x0)
-    else:
-        print("Chose unavailable minimization package")
-        return None
-
-
-def minimize_scipy(func, x0, method="BFGS", args=None, tol=1e-3, print_info=False):
-    res = scipy.optimize.minimize(func, x0, method=method, args=args, tol=tol)
+def minimize(func, x0, method="BFGS", args=None, tol=1e-3, print_info=False):
+    """Minimizes func using chosen method with scipy.optimize package"""
+    res = scipy.optimize.minimize(func, x0, method=method, args=args, tol=tol, options={'disp': False},
+                                  callback=MinimizeCallback(func, args))
     if print_info:
         print("Optimization was successful?", res.success)
         if not res.success:
@@ -26,7 +18,16 @@ def minimize_scipy(func, x0, method="BFGS", args=None, tol=1e-3, print_info=Fals
     return res.x
 
 
-def minimize_scikit(func, x0):
-    raise NotImplementedError
-    # res = skopt.gp_minimize(func, [(-2.0, 2.0)])
-    # return res
+class MinimizeCallback(object):
+    """Prints loss value and penalty value at each iteration"""
+    def __init__(self, loss_func, args):
+        self.loss_func = loss_func
+        self.args = args
+        self.iter = 0
+
+    def __call__(self, x):
+        print("Iteration: {0:3d} Penalty value: {1:8.2f} Loss: {2:8.2f}"
+              .format(self.iter,
+                      self.loss_func(section_speeds=x, track=self.args, compute_only_penalty=True),
+                      self.loss_func(section_speeds=x, track=self.args, compute_only_penalty=False)))
+        self.iter += 1
