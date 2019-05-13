@@ -1,3 +1,4 @@
+import datetime
 import math
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -73,6 +74,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
     hour = 15  # TODO calculate using section length and speeds
 
     model_params = pd.DataFrame(columns=["solar_radiation",
+                                         "cloudiness",
                                          "vehicle_panel_area",
                                          "section_slope_angle",
                                          "section_length",
@@ -87,6 +89,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                          "vehicle_equipment_power",
                                          "efficiency_outcome",
                                          "energy_outcome",
+                                         "coordinates",
                                          "section_speed"])
 
     for i in range(len(track.sections)):
@@ -115,6 +118,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
         energy_levels.append(energy_level)
 
         model_params.loc[len(model_params)] = [track.sections.loc[i].solar_radiation[hour],
+                                               track.sections.loc[i].cloudiness,
                                                VEHICLE_PANEL_AREA,
                                                track.sections.loc[i].slope_angle,
                                                track.sections.loc[i].length,
@@ -129,6 +133,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                                VEHICLE_EQUIPMENT_POWER,
                                                EFFICIENCY_OUTCOME,
                                                energy_outcome,
+                                               track.sections.loc[i].coordinates,
                                                section_speeds[i]]
 
     return {"levels": energy_levels,
@@ -162,7 +167,9 @@ def draw_energy_levels(energy_levels: list, energy_incomes: list, energy_outcome
     plt.xticks(range(len(energy_levels)), rotation=90)
     plt.legend()
     plt.grid()
-    plt.savefig("Energy flow.png")  # TODO refactor
+    plt.savefig("logs/Energy flow "
+                + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
+                + ".png")  # TODO refactor
     plt.show()
 
 

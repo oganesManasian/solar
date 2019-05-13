@@ -1,3 +1,4 @@
+import datetime
 import random
 import math
 from utils import timeit, check_net_connection
@@ -77,7 +78,7 @@ class Track:
     @timeit
     def preprocess_track(self):
         self.convert2m()
-        self.combine_points_to_sections(debug=False)
+        self.combine_points_to_sections(print_info=False)
         self.fill_weather_params()
         assert sum(self.sections.length) == 988984.1234339202, "Lost track part"   # TODO delete
 
@@ -87,23 +88,23 @@ class Track:
             self.track_points[i][1] = deg2m(self.track_points[i][1])
 
     @timeit
-    def combine_points_to_sections(self, debug=False):
+    def combine_points_to_sections(self, print_info=False):
         print("Before combining {} points".format(len(self.track_points)))
         # Init with first section
         section_start = self.track_points[0]
         section_end = self.track_points[1]
         section_dist = find_distance(section_start, section_end)
         for i in range(2, len(self.track_points)):
-            if debug: print("\n", i)
+            if print_info: print("\n", i)
             cur_point = self.track_points[i]
 
             previous_slope_angle = find_slope_angle(section_start, section_end)
             cur_slope_angle = find_slope_angle(section_end, cur_point)
             slope_angle_diff = abs(previous_slope_angle - cur_slope_angle)
             dist = find_distance(section_end, cur_point)
-            if debug: print("Slope angle diff {}, Dist {}, Section dist + dist {}".format(slope_angle_diff,
-                                                                                          dist,
-                                                                                          section_dist + dist))
+            if print_info: print("Slope angle diff {}, Dist {}, Section dist + dist {}".format(slope_angle_diff,
+                                                                                               dist,
+                                                                                               section_dist + dist))
 
             def add_new_section():  # TODO maybe pass arguments explicitly
                 if len(self.sections) == 0:
@@ -118,11 +119,11 @@ class Track:
                                                           [x, y, z], None, None])
 
             if slope_angle_diff < self.MAX_SLOPE_CHANGE and section_dist + dist < self.MAX_SECTION_LENGTH:
-                if debug: print("Decision: combining")
+                if print_info: print("Decision: combining")
                 section_dist += dist
                 section_end = cur_point
             else:
-                if debug: print("Decision: separating")
+                if print_info: print("Decision: separating")
                 add_new_section()
 
                 # Prepare for next section
@@ -131,10 +132,13 @@ class Track:
                 section_dist = dist
 
             if i == len(self.track_points) - 1:  # Separating last point
-                if debug: print("Separating last section")
+                if print_info: print("Separating last section")
                 add_new_section()
 
         print("After combining {} sections".format(len(self.sections)))
+        # self.sections.to_csv("logs/sections_params "
+        #                      + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
+        #                      + ".csv", sep=";")
 
     @timeit
     def fill_weather_params(self):
