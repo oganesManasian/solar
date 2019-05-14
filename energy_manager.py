@@ -28,24 +28,12 @@ EFFICIENCY_INCOME = 0.2 * 0.985
 EFFICIENCY_OUTCOME = 0.94  # TODO add modeling
 
 
-def compute_time(drive_calendar, start_day, start_hour, track, section_number):
-    """Computes current time (day and hour) on chosen section using information about
-    1) Driving calendar - hours when it is possible to drive
-    Format:
-    Race day number: [Begin of driving hour, End of driving hour]
-    2) Start time (day and hour) for race
-    3) Length and speed info about sections of track
-    4) Number of section which is considering"""
-    pass
-
-
 def compute_energy_levels(track: Track, section_speeds: list):
     """Computes energy level of each sector"""
     energy_levels = [BATTER_CHARGE_MAX]
-    hour = 15  # TODO calculate using section length and speeds
     for i in range(len(track.sections)):
         energy_income = compute_energy_income(section_speeds[i],
-                                              track.sections.loc[i].solar_radiation[hour],
+                                              track.sections.loc[i].solar_radiation,
                                               VEHICLE_PANEL_AREA,
                                               track.sections.loc[i].slope_angle,
                                               track.sections.loc[i].length,
@@ -71,10 +59,8 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
     energy_levels = [BATTER_CHARGE_MAX]
     energy_incomes = [0]
     energy_outcomes = [0]
-    hour = 15  # TODO calculate using section length and speeds
 
     model_params = pd.DataFrame(columns=["solar_radiation",
-                                         "cloudiness",
                                          "vehicle_panel_area",
                                          "section_slope_angle",
                                          "section_length",
@@ -90,11 +76,12 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                          "efficiency_outcome",
                                          "energy_outcome",
                                          "coordinates",
-                                         "section_speed"])
+                                         "section_speed",
+                                         "arrival_time"])
 
     for i in range(len(track.sections)):
         energy_income = compute_energy_income(section_speeds[i],
-                                              track.sections.loc[i].solar_radiation[hour],
+                                              track.sections.loc[i].solar_radiation,
                                               VEHICLE_PANEL_AREA,
                                               track.sections.loc[i].slope_angle,
                                               track.sections.loc[i].length,
@@ -117,8 +104,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
         energy_level = energy_levels[-1] + (energy_income - energy_outcome) * EFFICIENCY_BATTERY
         energy_levels.append(energy_level)
 
-        model_params.loc[len(model_params)] = [track.sections.loc[i].solar_radiation[hour],
-                                               track.sections.loc[i].cloudiness,
+        model_params.loc[len(model_params)] = [track.sections.loc[i].solar_radiation,
                                                VEHICLE_PANEL_AREA,
                                                track.sections.loc[i].slope_angle,
                                                track.sections.loc[i].length,
@@ -134,7 +120,8 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                                EFFICIENCY_OUTCOME,
                                                energy_outcome,
                                                track.sections.loc[i].coordinates,
-                                               section_speeds[i]]
+                                               section_speeds[i],
+                                               track.sections.loc[i].arrival_time]
 
     return {"levels": energy_levels,
             "incomes": energy_incomes,

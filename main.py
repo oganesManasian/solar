@@ -6,23 +6,31 @@ from loss_func import compute_loss_func, compute_total_penalty
 import datetime
 import os
 
+START_DATE = datetime.date.today()  # datetime.date(2019, 10, 13)
+START_TIME = datetime.time(8, 0, 0)
+START_DATETIME = datetime.datetime.combine(START_DATE, START_TIME)
+DRIVE_TIME_BOUNDS = [8, 17]
+INIT_SPEED = 72 / 3.6
+
 if not os.path.isdir("logs"):
     os.mkdir("logs")
 
 # Load race track
 track = Track()
 track.load_track_from_mat("data_tracks.mat")
+track.preprocess_track()
+init_speeds = [INIT_SPEED] * len(track.sections)
+track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, init_speeds)
+track.fill_weather_params()
 # track.draw_track_altitudes("Track after preprocessing")
 # track.sections = track.sections[:10]  # Taking only small part of track for fast tests
 
 # Test that optimization is possible
-speeds_test = [1] * len(track.sections)
-energy_levels_test = energy_manager.compute_energy_levels(track, speeds_test)
+test_speeds = [1] * len(track.sections)
+energy_levels_test = energy_manager.compute_energy_levels(track, test_speeds)
 assert (energy_levels_test[-1] >= 0), "Too little energy to cover the distance!"
 
 # Optimize speed
-INIT_SPEED = 72 / 3.6  # 20 m/s
-init_speeds = [INIT_SPEED] * len(track.sections)
 print("Init loss:", compute_loss_func(init_speeds, track),
       "\nInit penalty:", compute_total_penalty(init_speeds, track))
 

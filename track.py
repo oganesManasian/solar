@@ -5,9 +5,10 @@ from utils import timeit, check_net_connection
 import matplotlib.pyplot as plt
 import pandas as pd
 from environment_data import compute_solar_radiation, get_weather_params_owm
+import copy
 
-# (X, Y, Z) = range(3)  # Global variables are evil
-
+DEFAULT_SOLAR_RADIATION = 1000
+DEFAULT_CLOUDNESS = 0
 
 def find_distance(start_pnt, end_pnt):
     dx = end_pnt[0] - start_pnt[0]
@@ -45,7 +46,7 @@ class Track:
     # sections_length_sum = [0]
     # sections_slope_angle = []
     sections = pd.DataFrame(columns=["length", "length_sum", "slope_angle", "coordinates",
-                                     "solar_radiation", "cloudiness"])
+                                     "solar_radiation", "arrival_time"])
 
     def generate_track(self, sections_number):
         points_number = sections_number + 1
@@ -73,13 +74,11 @@ class Track:
         self.track_points.clear()
         self.track_points = data_tracks["data1"]
         print("Loaded {} points".format(len(self.track_points)))
-        self.preprocess_track()
 
     @timeit
     def preprocess_track(self):
         self.convert2m()
         self.combine_points_to_sections(print_info=False)
-        self.fill_weather_params()
         assert sum(self.sections.length) == 988984.1234339202, "Lost track part"   # TODO delete
 
     def convert2m(self):
@@ -140,23 +139,39 @@ class Track:
         #                      + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
         #                      + ".csv", sep=";")
 
+    def compute_arrival_times(self, start_datetime, drive_time_bounds, speeds):  # TODO call while optimizing
+        """Computes time when solar car will arrive to each section"""
+        datetime_cur = copy.deepcopy(start_datetime)
+        for i in range(len(self.sections)):
+            self.sections.at[i, "arrival_time"] = datetime_cur
+            seconds = self.sections.iloc[i].length / speeds[i]
+            datetime_cur += datetime.timedelta(seconds=seconds)
+
+            if datetime_cur.hour >= drive_time_bounds[1]:
+                seconds_tomorrow = (datetime_cur.hour - drive_time_bounds[1]) * 3600 \
+                                   + datetime_cur.minute * 60 + datetime_cur.second
+                datetime_cur += datetime.timedelta(days=1)
+                datetime_cur = datetime_cur.replace(hour=drive_time_bounds[0], minute=0, second=0)
+                datetime_cur += datetime.timedelta(seconds=seconds_tomorrow)
+
     @timeit
     def fill_weather_params(self):
-        day = 20  # TODO get from datetime
         net_available = check_net_connection()
 
         for i in range(len(self.sections)):
             latitude, longitude = self.sections.iloc[i].coordinates[0], self.sections.iloc[i].coordinates[1]
-
-            if False: #net_available:  # TODO turn on check
-                cloudiness = get_weather_params_owm(latitude, longitude)["clouds"]
+            datetime_cur = self.sections.iloc[i].arrival_time
+            if net_available:
+                # cloudiness = get_weather_params_owm(latitude, longitude, datetime_cur)["clouds"]
+                cloudiness = DEFAULT_CLOUDNESS  # TODO delete
             else:
-                cloudiness = 0  # TODO Tune default parameter
-            self.sections.at[i, "cloudiness"] = [cloudiness] * 24  # each hour of day
+                cloudiness = DEFAULT_CLOUDNESS
+            # self.sections.at[i, "cloudiness"] = cloudiness  # TODO delete because we do not need to store
 
-            # TODO compute real value using cloudiness
-            # self.sections.at[i, "solar_radiation"] = compute_solar_radiation(latitude, day)
-            self.sections.at[i, "solar_radiation"] = [1000] * 24  # TODO delete
+            solar_radiation_raw = compute_solar_radiation(latitude, datetime_cur)
+
+            # Compute final solar radiation
+            self.sections.at[i, "solar_radiation"] = solar_radiation_raw * (1 - cloudiness / 100)  # TODO tune
 
     def draw_track_xy(self, title="Track XY"):
         if self.track_points is None:
