@@ -77,7 +77,8 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                          "energy_outcome",
                                          "coordinates",
                                          "section_speed",
-                                         "arrival_time"])
+                                         "arrival_time",
+                                         "distance_covered"])
 
     for i in range(len(track.sections)):
         energy_income = compute_energy_income(section_speeds[i],
@@ -121,7 +122,8 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                                energy_outcome,
                                                track.sections.loc[i].coordinates,
                                                section_speeds[i],
-                                               track.sections.loc[i].arrival_time]
+                                               track.sections.loc[i].arrival_time,
+                                               track.sections.loc[i].length_sum]
 
     return {"levels": energy_levels,
             "incomes": energy_incomes,

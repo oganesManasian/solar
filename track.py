@@ -148,11 +148,11 @@ class Track:
             datetime_cur += datetime.timedelta(seconds=seconds)
 
             if datetime_cur.hour >= drive_time_bounds[1]:
-                seconds_tomorrow = (datetime_cur.hour - drive_time_bounds[1]) * 3600 \
+                seconds_exceeded = (datetime_cur.hour - drive_time_bounds[1]) * 3600 \
                                    + datetime_cur.minute * 60 + datetime_cur.second
                 datetime_cur += datetime.timedelta(days=1)
                 datetime_cur = datetime_cur.replace(hour=drive_time_bounds[0], minute=0, second=0)
-                datetime_cur += datetime.timedelta(seconds=seconds_tomorrow)
+                datetime_cur += datetime.timedelta(seconds=seconds_exceeded)
 
     @timeit
     def fill_weather_params(self):
@@ -166,12 +166,11 @@ class Track:
                 cloudiness = DEFAULT_CLOUDNESS  # TODO delete
             else:
                 cloudiness = DEFAULT_CLOUDNESS
-            # self.sections.at[i, "cloudiness"] = cloudiness  # TODO delete because we do not need to store
 
             solar_radiation_raw = compute_solar_radiation(latitude, datetime_cur)
 
             # Compute final solar radiation
-            self.sections.at[i, "solar_radiation"] = solar_radiation_raw * (1 - cloudiness / 100)  # TODO tune
+            self.sections.at[i, "solar_radiation"] = solar_radiation_raw * (1 - cloudiness / 100)  # TODO tune formula
 
     def draw_track_xy(self, title="Track XY"):
         if self.track_points is None:

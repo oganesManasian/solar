@@ -1,6 +1,9 @@
 import datetime
+from typing import List, Any, Union
 
 import scipy.optimize
+
+import energy_manager
 from utils import timeit
 from track import Track
 import pandas as pd
@@ -101,3 +104,44 @@ class MinimizeCallback(object):
         if self.print_info:
             print("     ", self.iter, "iteration - done")
         self.iter += 1
+
+
+def bruteforce_method(func, penalty_func, speed_range, track):
+    final_energy_level = []
+    race_time = []
+    penalty = []
+    for speed in speed_range:
+        speeds = [speed] * len(track.sections)
+        energy_levels = energy_manager.compute_energy_levels(track, speeds)
+
+        final_energy_level.append(energy_levels[-1])
+        penalty.append(penalty_func(speeds, track))
+        race_time.append(func(speeds, track))
+
+    # import matplotlib.pyplot as plt
+#
+    # plt.subplot(1, 3, 1)
+    # plt.title("Energy")
+    # plt.plot(speed_range, final_energy_level)
+    # plt.grid()
+#
+    # plt.subplot(1, 3, 2)
+    # plt.title("Penalty")
+    # plt.plot(speed_range, penalty)
+    # plt.grid()
+#
+    # plt.subplot(1, 3, 3)
+    # plt.title("Race time")
+    # plt.plot(speed_range, race_time)
+    # plt.grid()
+    # plt.show()
+
+    def func_to_minimize(section_speed, track):
+        section_speeds = [section_speed] * len(track.sections)
+        return func(section_speeds, track) + penalty_func(section_speeds, track)
+
+    possible_ind = [i for i in range(len(final_energy_level)) if final_energy_level[i] >= 0]
+    bounds = [speed_range[possible_ind[0]], speed_range[possible_ind[-1]]]
+    optimal_speed = scipy.optimize.minimize_scalar(func_to_minimize, args=track, bounds=bounds, method="bounded")
+
+    return optimal_speed.x
