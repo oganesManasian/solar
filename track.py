@@ -1,5 +1,4 @@
 import datetime
-import random
 import math
 from utils import timeit, check_net_connection
 import matplotlib.pyplot as plt
@@ -38,96 +37,94 @@ def m2deg(m):
 class Track:
     """
     Class for race's track.
-    Consists of set of points with x, y, z coordinates
+    Consists of set of points with x, y, z coordinates and their features (solar radiation, distance to previous)
     """
-    MAX_SECTION_LENGTH = 30000
-    MAX_SLOPE_CHANGE = 0.2
+    MAX_SECTION_LENGTH = 20000
+    MAX_SLOPE_CHANGE = 0.15
 
-    track_points = []  # Track is list of points
     sections = pd.DataFrame(columns=["length", "length_sum", "slope_angle", "coordinates",
                                      "solar_radiation", "arrival_time"])
 
-    def generate_track(self, sections_number):
-        points_number = sections_number + 1
-        self.track_points.clear()
-        self.track_points = [(0, 0, 0)]
-        for _ in range(points_number - 1):
-            x = random.randint(self.track_points[-1][2], self.track_points[-1][2] + 100)
-            y = -1
-            z = random.randint(self.track_points[-1][2] - 20, self.track_points[-1][2] + 20)
-            self.track_points.append((x, y, z))
-
-    def generate_simple_track(self, sections_number):
-        points_number = sections_number + 1
-        self.track_points.clear()
-        self.track_points = [(0, 0, 0)]
-        for _ in range(points_number - 1):
-            x = self.track_points[-1][0] + 1
-            y = 0
-            z = self.track_points[-1][2]
-            self.track_points.append((x, y, z))
-
     def load_track_from_mat(self, filename):
-        data_tracks = loadmat(filename)
-        self.track_points.clear()
-        self.track_points = data_tracks["data1"]
-        print("Loaded {} points".format(len(self.track_points)))
+        pass
 
+    @timeit
     def load_track_from_csv(self, filename):
         track = pd.read_csv(filename, sep=';')
         track = track.iloc[:, 0:3]
-        self.track_points.clear()
-        self.track_points = track.values.tolist()
-        print("Loaded {} points".format(len(self.track_points)))
+        self.sections.coordinates = [[track.iloc[i, 0], track.iloc[i, 1], track.iloc[i, 2]] for i in range(len(track))]
+        print("Loaded {} points".format(len(self.sections)))
 
     @timeit
     def preprocess_track(self):
         self.convert2m()
-        self.combine_points_to_sections(print_info=False)
-        # assert sum(self.sections.length) == 988984.1234339202, "Lost track part"   # TODO delete
-
-    def convert2m(self):
-        for i in range(len(self.track_points)):
-            self.track_points[i][0] = deg2m(self.track_points[i][0])
-            self.track_points[i][1] = deg2m(self.track_points[i][1])
+        self.compute_length()
+        self.compute_slope_angle()
 
     @timeit
-    def combine_points_to_sections(self, print_info=False):
-        print("Before combining {} points".format(len(self.track_points)))
+    def convert2m(self):
+        self.sections.coordinates = self.sections.coordinates.apply(
+            lambda coords: [deg2m(coords[0]), deg2m(coords[1]), coords[2]])
+
+    @timeit
+    def compute_length(self):
+        length_sum = 0.0
+        for i in range(len(self.sections) - 1):
+            length = find_distance(
+                self.sections.iloc[i].coordinates,
+                self.sections.iloc[i + 1].coordinates
+            )
+            length_sum += length
+            self.sections.iloc[i].length = length
+            self.sections.iloc[i].length_sum = length_sum
+
+    @timeit
+    def compute_slope_angle(self):
+        for i in range(len(self.sections) - 1):
+            self.sections.iloc[i].slope_angle = find_slope_angle(
+                self.sections.iloc[i].coordinates,
+                self.sections.iloc[i + 1].coordinates
+            )
+
+    @timeit
+    def combine_points_to_sections(self, show_info=False):
+        print("Before combining {} points".format(len(self.sections)))
+        new_sections = pd.DataFrame(columns=["length", "length_sum", "slope_angle", "coordinates",
+                                             "solar_radiation", "arrival_time"])
         # Init with first section
-        section_start = self.track_points[0]
-        section_end = self.track_points[1]
+        section_start = self.sections.iloc[0].coordinates
+        section_end = self.sections.iloc[1].coordinates
         section_dist = find_distance(section_start, section_end)
-        for i in range(2, len(self.track_points)):
-            if print_info: print("\n", i)
-            cur_point = self.track_points[i]
+        for i in range(2, len(self.sections)):
+            if show_info: print("\n", i)
+            cur_point = self.sections.iloc[i].coordinates
 
             previous_slope_angle = find_slope_angle(section_start, section_end)
             cur_slope_angle = find_slope_angle(section_end, cur_point)
             slope_angle_diff = abs(previous_slope_angle - cur_slope_angle)
             dist = find_distance(section_end, cur_point)
-            if print_info: print("Slope angle diff {}, Dist {}, Section dist + dist {}".format(slope_angle_diff,
-                                                                                               dist,
-                                                                                               section_dist + dist))
+            if show_info: print("Slope angle diff {}, Dist {}, Section dist + dist {}".format(slope_angle_diff,
+                                                                                              dist,
+                                                                                              section_dist + dist))
 
             def add_new_section():  # TODO maybe pass arguments explicitly
-                if len(self.sections) == 0:
+                if len(new_sections) == 0:
                     section_dist_sum = 0 + section_dist
                 else:
-                    section_dist_sum = self.sections.loc[len(self.sections) - 1].length_sum + section_dist
+                    section_dist_sum = new_sections.loc[len(new_sections) - 1].length_sum + section_dist
                 x = m2deg(section_start[0])
                 y = m2deg(section_start[1])
                 z = section_start[2]
                 # coordinates = list(map(m2deg, section_start))  # TODO make more clear de2m and reverse translations
-                self.sections.loc[len(self.sections)] = ([section_dist, section_dist_sum, previous_slope_angle,
+                new_sections.loc[len(new_sections)] = ([section_dist, section_dist_sum, previous_slope_angle,
                                                           [x, y, z], None, None])
 
             if slope_angle_diff < self.MAX_SLOPE_CHANGE and section_dist + dist < self.MAX_SECTION_LENGTH:
-                if print_info: print("Decision: combining")
+                if show_info: print("Decision: combining")
                 section_dist += dist
                 section_end = cur_point
             else:
-                if print_info: print("Decision: separating")
+                if show_info: print("Decision: separating")
                 add_new_section()
 
                 # Prepare for next section
@@ -135,15 +132,17 @@ class Track:
                 section_end = cur_point
                 section_dist = dist
 
-            if i == len(self.track_points) - 1:  # Separating last point
-                if print_info: print("Separating last section")
+            if i == len(self.sections) - 1:  # Separating last point
+                if show_info: print("Separating last section")
                 add_new_section()
 
+        self.sections = new_sections
         print("After combining {} sections".format(len(self.sections)))
         # self.sections.to_csv("logs/sections_params "
         #                      + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
         #                      + ".csv", sep=";")
 
+    @timeit
     def compute_arrival_times(self, start_datetime, drive_time_bounds, speeds):  # TODO call while optimizing
         """Computes time when solar car will arrive to each section"""
         datetime_cur = copy.deepcopy(start_datetime)
@@ -160,7 +159,7 @@ class Track:
                 datetime_cur += datetime.timedelta(seconds=seconds_exceeded)
 
     @timeit
-    def fill_weather_params(self):
+    def compute_weather_params(self):
         net_available = check_net_connection()
 
         for i in range(len(self.sections)):
@@ -177,43 +176,33 @@ class Track:
             # Compute final solar radiation
             self.sections.at[i, "solar_radiation"] = solar_radiation_raw * (1 - cloudiness / 100)  # TODO tune formula
 
-    def draw_track_xy(self, title="Track XY"):
-        if self.track_points is None:
-            print("Track points are not defined")
-            return
+    def draw_track_features(self, title=None):
+        distance_covered = []
+        altitudes = []
+        slope_angle = []
+        solar_radiation = []
+        arrival_time = []
+        for index, section in self.sections.iterrows():
+            distance_covered.append(section.length_sum / 1000)  # to km
+            altitudes.append(section.coordinates[2])
+            slope_angle.append(section.slope_angle)
+            solar_radiation.append(section.solar_radiation)
+            arrival_time.append(section.arrival_time)
 
-        x = []
-        y = []
-        for i in range(len(self.track_points)):
-            x.append(self.track_points[i][0])
-            y.append(self.track_points[i][1])
+        titles = ["Altitudes", "Slope angle", "Solar radiation", "Arrival time"]
+        y = [altitudes, slope_angle, solar_radiation, arrival_time]
+        fig, axs = plt.subplots(1, 4, figsize=(10, 10))
+        for i in range(len(titles)):
+            axs[i].grid(True)
+            axs[i].set_xlabel("Distance covered (km)")
+            axs[i].set_title(titles[i])
+            axs[i].plot(distance_covered, y[i])
 
-        plt.figure()
-        plt.title(title)
-        plt.xlabel("X")
-        plt.ylabel("Y")
-        plt.grid()
-        plt.plot(x, y)
-        plt.plot(x[0], y[0], "go", label="start")
-        plt.plot(x[1:-1], y[1:-1], "yo")
-        plt.plot(x[-1], y[-1], "ro", label="end")
-        plt.legend()
+        if title is not None:
+            fig.suptitle(title)
+
+        fig.tight_layout()
         plt.show()
-
-    def draw_track_altitudes(self, title="Track altitudes"):
-        x = list()
-        z = list()
-        for index, row in self.sections.iterrows():
-            x.append(row.length_sum)
-            z.append(row.coordinates[2])
-
-        plt.figure()
-        plt.title(title)
-        plt.xlabel("Distance travelled (m)")
-        plt.ylabel("Altitude")
-        plt.grid()
-        plt.plot(x, z)
-        plt.plot(x[0], z[0], "go", label="start")
-        plt.plot(x[-1], z[-1], "ro", label="end")
-        plt.legend()
-        plt.show()
+        plt.savefig("logs/track_features"
+                    + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
+                    + ".png")

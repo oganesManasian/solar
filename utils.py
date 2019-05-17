@@ -7,7 +7,7 @@ def timeit(method):
         start_time = time.time()
         result = method(*args, **kwards)
         elapsed_time = time.time() - start_time
-        print(method.__name__, "took", elapsed_time)
+        print(method.__name__, "took", round(elapsed_time, 2), "s.")
         return result
 
     return timed

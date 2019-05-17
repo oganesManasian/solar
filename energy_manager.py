@@ -103,6 +103,9 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                                 FRICTION_RESISTANCE_RATE,
                                                 VEHICLE_EQUIPMENT_POWER,
                                                 EFFICIENCY_OUTCOME)
+        if energy_outcome is None:
+            print("Outcome energy was negative on section:", i)
+            energy_outcome = 0
         energy_outcomes.append(energy_outcome)
 
         energy_level = energy_levels[-1] + (energy_income - energy_outcome) * EFFICIENCY_BATTERY

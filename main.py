@@ -20,20 +20,21 @@ if not os.path.isdir("logs"):
 # Load race track
 track = Track()
 track.load_track_from_csv("track_Australia.csv")
-# track.load_track_from_mat("track_USA.mat")
 track.preprocess_track()
+# track.draw_track_features("Before combining")
+track.combine_points_to_sections(show_info=False)
 init_speeds = [INIT_SPEED] * len(track.sections)
 track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, init_speeds)
-track.fill_weather_params()
-# track.draw_track_altitudes("Track after preprocessing")
-track.sections = track.sections[:10]  # Taking only small part of track for fast tests
+track.compute_weather_params()
+# track.draw_track_features("After combining")
+# track.sections = track.sections[:50]  # Taking only small part of track for fast tests
 
 # Test that optimization is possible
 test_speeds = [1] * len(track.sections)
 energy_levels_test = energy_manager.compute_energy_levels(track, test_speeds)
 assert (energy_levels_test[-1] >= 0), "Too little energy to cover the distance!"
 
-# Optimize speed
+# Solve with constant speed
 base_speed = optimization_methods.bruteforce_method(compute_loss_func,
                                                     compute_total_penalty,
                                                     np.linspace(OPTIMAL_SPEED_BOUNDS[0], OPTIMAL_SPEED_BOUNDS[1],
@@ -41,7 +42,11 @@ base_speed = optimization_methods.bruteforce_method(compute_loss_func,
                                                     track)
 print("Base speed:", base_speed)
 base_speeds = [base_speed] * len(track.sections)
+track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, base_speeds)
+track.compute_weather_params()
+# track.draw_track_features("Constant speed")
 
+# Optimize speed
 print("Init loss:", compute_loss_func(base_speeds, track),
       "\nInit penalty:", compute_total_penalty(base_speeds, track))
 
@@ -54,7 +59,7 @@ print("Init loss:", compute_loss_func(base_speeds, track),
 #                                                   args=(track),
 #                                                   method="L-BFGS-B",
 #                                                   tol=1e-5,
-#                                                   print_info=True)
+#                                                   show_info=True)
 
 optimal_speeds = optimization_methods.exterior_penalty_method(func=compute_loss_func,
                                                               penalty_func=compute_total_penalty,
@@ -62,12 +67,12 @@ optimal_speeds = optimization_methods.exterior_penalty_method(func=compute_loss_
                                                               args=track,
                                                               eps=1,
                                                               tol=1e-3,
-                                                              print_info=True)
+                                                              show_info=True)
 
 print("Optimization result:", optimal_speeds)
 print("Final loss:", compute_loss_func(optimal_speeds, track),
       "\nFinal penalty:", compute_total_penalty(optimal_speeds, track))
-print("Total travel time:", compute_loss_func(optimal_speeds, track) / 3600, "hours")
+print("Total travel time:", round(compute_loss_func(optimal_speeds, track) / 3600, 2), "hours")
 # Solution visualisation
 speeds = list(optimal_speeds[:])
 speeds.append(speeds[-1])
