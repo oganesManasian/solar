@@ -6,9 +6,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from environment_data import compute_solar_radiation, get_weather_params_owm
 import copy
+from scipy.io import loadmat
 
 DEFAULT_SOLAR_RADIATION = 1000
 DEFAULT_CLOUDNESS = 0
+
 
 def find_distance(start_pnt, end_pnt):
     dx = end_pnt[0] - start_pnt[0]
@@ -38,13 +40,10 @@ class Track:
     Class for race's track.
     Consists of set of points with x, y, z coordinates
     """
-    MAX_SECTION_LENGTH = 10000
-    MAX_SLOPE_CHANGE = 0.05
+    MAX_SECTION_LENGTH = 30000
+    MAX_SLOPE_CHANGE = 0.2
 
     track_points = []  # Track is list of points
-    # sections_length = []
-    # sections_length_sum = [0]
-    # sections_slope_angle = []
     sections = pd.DataFrame(columns=["length", "length_sum", "slope_angle", "coordinates",
                                      "solar_radiation", "arrival_time"])
 
@@ -69,17 +68,23 @@ class Track:
             self.track_points.append((x, y, z))
 
     def load_track_from_mat(self, filename):
-        from scipy.io import loadmat
         data_tracks = loadmat(filename)
         self.track_points.clear()
         self.track_points = data_tracks["data1"]
+        print("Loaded {} points".format(len(self.track_points)))
+
+    def load_track_from_csv(self, filename):
+        track = pd.read_csv(filename, sep=';')
+        track = track.iloc[:, 0:3]
+        self.track_points.clear()
+        self.track_points = track.values.tolist()
         print("Loaded {} points".format(len(self.track_points)))
 
     @timeit
     def preprocess_track(self):
         self.convert2m()
         self.combine_points_to_sections(print_info=False)
-        assert sum(self.sections.length) == 988984.1234339202, "Lost track part"   # TODO delete
+        # assert sum(self.sections.length) == 988984.1234339202, "Lost track part"   # TODO delete
 
     def convert2m(self):
         for i in range(len(self.track_points)):

@@ -5,3 +5,9 @@
 
 # Cashe
 *.pyc
+
+# Logs
+/logs
+
+# Track data
+*.mat

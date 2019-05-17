@@ -13,8 +13,7 @@ def compute_solar_radiation(latitude, datetime_cur):
     if -90 <= latitude <= 90 and 0 < day_of_year <= 365 and 8 <= hour <= 17:
         declination = radians(23.45 * sin(radians(360 * (284 + day_of_year) / 365)))
         hour_angle = radians(15 * (hour - 12))
-        cosz = sin(radians(latitude)) * sin(declination) + cos(radians(latitude)) * cos(declination) \
-               * cos(hour_angle)
+        cosz = sin(radians(latitude)) * sin(declination) + cos(radians(latitude)) * cos(declination) * cos(hour_angle)
         airmass = NORMAL_ATMOUSPHERIC_PRESSURE / (101.3 * cosz)  # optical airmass
         if abs(airmass) > 100:
             airmass = 0

@@ -8,18 +8,19 @@ import os
 import numpy as np
 
 START_DATE = datetime.date.today()  # datetime.date(2019, 10, 13)
-START_TIME = datetime.time(8, 0, 0)
+START_TIME = datetime.time(8, 30, 0)
 START_DATETIME = datetime.datetime.combine(START_DATE, START_TIME)
 DRIVE_TIME_BOUNDS = [8, 17]
 INIT_SPEED = 72 / 3.6
-OPTIMAL_SPEED_BOUNDS = [15, 30]
+OPTIMAL_SPEED_BOUNDS = [15, 40]
 
 if not os.path.isdir("logs"):
     os.mkdir("logs")
 
 # Load race track
 track = Track()
-track.load_track_from_mat("data_tracks.mat")
+track.load_track_from_csv("track_Australia.csv")
+# track.load_track_from_mat("track_USA.mat")
 track.preprocess_track()
 init_speeds = [INIT_SPEED] * len(track.sections)
 track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, init_speeds)
@@ -66,7 +67,7 @@ optimal_speeds = optimization_methods.exterior_penalty_method(func=compute_loss_
 print("Optimization result:", optimal_speeds)
 print("Final loss:", compute_loss_func(optimal_speeds, track),
       "\nFinal penalty:", compute_total_penalty(optimal_speeds, track))
-
+print("Total travel time:", compute_loss_func(optimal_speeds, track) / 3600, "hours")
 # Solution visualisation
 speeds = list(optimal_speeds[:])
 speeds.append(speeds[-1])

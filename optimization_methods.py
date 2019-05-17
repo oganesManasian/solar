@@ -1,5 +1,4 @@
 import datetime
-from typing import List, Any, Union
 
 import scipy.optimize
 
@@ -7,6 +6,7 @@ import energy_manager
 from utils import timeit
 from track import Track
 import pandas as pd
+import numpy as np
 
 
 @timeit
@@ -16,7 +16,9 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
     """Minimizes function with constraints using exterior penalty method"""
     optimization_step_description = pd.DataFrame(columns=["Step", "MU",
                                                           "Loss function", "Penalty function",
-                                                          "MU * penalty function"])
+                                                          "MU * penalty function",
+                                                          "Average speed", "Speed vector norm",
+                                                          "Speed vector change norm"])
     x = x0
     mu = mu0
     step = 1
@@ -33,20 +35,25 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
 
         if print_info:
             print("Starting internal minimization")
-        x, success = minimize(func=func_to_minimize,
+        new_x, success = minimize(func=func_to_minimize,
                               x0=x,
                               args=args,
                               method="L-BFGS-B",
                               tol=tol,
                               print_info=print_info)
 
-        loss_function_value = func(x, args)
-        penalty_function_value = penalty_func(x, args)
-        mu_x_penalty_function_value = mu * penalty_func(x, args)
+        loss_function_value = func(new_x, args)
+        penalty_function_value = penalty_func(new_x, args)
+        mu_x_penalty_function_value = mu * penalty_func(new_x, args)
+        average_speed = np.mean(new_x)
+        speed_vector_norm = np.linalg.norm(new_x, 1)
+        speed_vector_change_norm = np.linalg.norm(new_x - x, 1)
         optimization_step_description.loc[len(optimization_step_description)] = (step, mu,
                                                                                  loss_function_value,
                                                                                  penalty_function_value,
-                                                                                 mu_x_penalty_function_value)
+                                                                                 mu_x_penalty_function_value,
+                                                                                 average_speed, speed_vector_norm,
+                                                                                 speed_vector_change_norm)
 
         if not success:
             print("Internal minimization failed")
@@ -69,10 +76,12 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
             print("Exceeded maximum number of iterations")
             break
 
+        x = new_x
+
     optimization_step_description.to_csv("logs/optimization "
                                          + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
                                          + ".csv", sep=";")
-    return x
+    return new_x
 
 
 @timeit
@@ -142,6 +151,7 @@ def bruteforce_method(func, penalty_func, speed_range, track):
 
     possible_ind = [i for i in range(len(final_energy_level)) if final_energy_level[i] >= 0]
     bounds = [speed_range[possible_ind[0]], speed_range[possible_ind[-1]]]
+    print("Bounds for base speed:", bounds)
     optimal_speed = scipy.optimize.minimize_scalar(func_to_minimize, args=track, bounds=bounds, method="bounded")
 
     return optimal_speed.x
