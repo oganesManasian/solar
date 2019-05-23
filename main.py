@@ -11,7 +11,7 @@ START_DATE = datetime.date.today()  # datetime.date(2019, 10, 13)
 START_TIME = datetime.time(8, 30, 0)
 START_DATETIME = datetime.datetime.combine(START_DATE, START_TIME)
 DRIVE_TIME_BOUNDS = [8, 17]
-INIT_SPEED = 72 / 3.6
+INIT_SPEED = 25
 OPTIMAL_SPEED_BOUNDS = [15, 40]
 
 if not os.path.isdir("logs"):
@@ -27,7 +27,7 @@ init_speeds = [INIT_SPEED] * len(track.sections)
 track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, init_speeds)
 track.compute_weather_params()
 # track.draw_track_features("After combining")
-# track.sections = track.sections[:50]  # Taking only small part of track for fast tests
+# track.sections = track.sections[:10]  # Taking only small part of track for speeding up tests
 
 # Test that optimization is possible
 test_speeds = [1] * len(track.sections)
@@ -39,7 +39,8 @@ base_speed = optimization_methods.bruteforce_method(compute_loss_func,
                                                     compute_total_penalty,
                                                     np.linspace(OPTIMAL_SPEED_BOUNDS[0], OPTIMAL_SPEED_BOUNDS[1],
                                                                 (OPTIMAL_SPEED_BOUNDS[1] - OPTIMAL_SPEED_BOUNDS[0]) * 3),
-                                                    track)
+                                                    track,
+                                                    show_info=False)
 print("Base speed:", base_speed)
 base_speeds = [base_speed] * len(track.sections)
 track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, base_speeds)
@@ -48,7 +49,7 @@ track.compute_weather_params()
 
 # Optimize speed
 print("Init loss:", compute_loss_func(base_speeds, track),
-      "\nInit penalty:", compute_total_penalty(base_speeds, track))
+      "\nInit penalty:", compute_total_penalty(base_speeds, track, continuous=False))
 
 # def func_to_minimize(section_speeds: list, track: Track):
 #     return compute_loss_func(section_speeds, track) + 1 * compute_total_penalty(section_speeds, track)
@@ -71,8 +72,12 @@ optimal_speeds = optimization_methods.exterior_penalty_method(func=compute_loss_
 
 print("Optimization result:", optimal_speeds)
 print("Final loss:", compute_loss_func(optimal_speeds, track),
-      "\nFinal penalty:", compute_total_penalty(optimal_speeds, track))
+      "\nFinal penalty:", compute_total_penalty(optimal_speeds, track, continuous=False))
 print("Total travel time:", round(compute_loss_func(optimal_speeds, track) / 3600, 2), "hours")
+
+# Try to find better solution in point viсinity
+optimization_methods.random_change(optimal_speeds, compute_loss_func, compute_total_penalty, track, iter_num=1000)
+
 # Solution visualisation
 speeds = list(optimal_speeds[:])
 speeds.append(speeds[-1])
@@ -97,3 +102,22 @@ model_params = model_data["params"]
 model_params.to_csv("logs/model_params "
                     + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
                     + ".csv", sep=";")
+
+# Find relation between solar radiation and vehicle speed
+solar_radiation_levels = model_data["params"].solar_radiation
+
+plt.subplot(2, 1, 1)
+plt.title("Optimal speeds")
+# plt.step(range(len(speeds)), speeds, where='post')
+plt.plot(range(len(optimal_speeds)), optimal_speeds)
+plt.grid()
+
+plt.subplot(2, 1, 2)
+plt.title("Solar radiation")
+plt.plot(range(len(optimal_speeds)), solar_radiation_levels)
+plt.grid()
+
+plt.savefig("logs/Speed and solar radiation relationship "
+            + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
+            + ".png")  # TODO refactor
+plt.show()

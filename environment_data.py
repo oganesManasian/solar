@@ -40,7 +40,7 @@ def get_weather_params_owm(latitude, longitude, datetime):
     while True:
         datetime_forecast_str = json_data['list'][ind]['dt_txt']
         datetime_forecast = datetime.strptime(datetime_forecast_str, '%Y-%m-%d %H:%M:%S')
-        if datetime_forecast > datetime:
+        if datetime_forecast > datetime or ind == len(json_data['list']) - 1:
             break
         else:
             ind += 1

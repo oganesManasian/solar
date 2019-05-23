@@ -7,6 +7,7 @@ from utils import timeit
 from track import Track
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 @timeit
@@ -31,7 +32,7 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
                   "mu:", mu)
 
         def func_to_minimize(section_speeds: list, track: Track):
-                return func(section_speeds, track) + mu * penalty_func(section_speeds, track)
+                return func(section_speeds, track) + mu * penalty_func(section_speeds, track, continuous=True)
 
         if show_info:
             print("Starting internal minimization")
@@ -43,8 +44,8 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
                                   show_info=show_info)
 
         loss_function_value = func(new_x, args)
-        penalty_function_value = penalty_func(new_x, args)
-        mu_x_penalty_function_value = mu * penalty_func(new_x, args)
+        penalty_function_value = penalty_func(new_x, args, continuous=False)
+        mu_x_penalty_function_value = mu * penalty_func(new_x, args, continuous=True)
         average_speed = np.mean(new_x)
         speed_vector_norm = np.linalg.norm(new_x, 1)
         speed_vector_change_norm = np.linalg.norm(new_x - x, 1)
@@ -115,6 +116,7 @@ class MinimizeCallback(object):
         self.iter += 1
 
 
+@timeit
 def bruteforce_method(func, penalty_func, speed_range, track, show_info=False):
     final_energy_level = []
     race_time = []
@@ -124,30 +126,25 @@ def bruteforce_method(func, penalty_func, speed_range, track, show_info=False):
         energy_levels = energy_manager.compute_energy_levels(track, speeds)
 
         final_energy_level.append(energy_levels[-1])
-        penalty.append(penalty_func(speeds, track))
+        penalty.append(penalty_func(speeds, track, continuous=False))
         race_time.append(func(speeds, track))
 
-    # import matplotlib.pyplot as plt
-#
-    # plt.subplot(1, 3, 1)
-    # plt.title("Energy")
-    # plt.plot(speed_range, final_energy_level)
-    # plt.grid()
-#
-    # plt.subplot(1, 3, 2)
-    # plt.title("Penalty")
-    # plt.plot(speed_range, penalty)
-    # plt.grid()
-#
-    # plt.subplot(1, 3, 3)
-    # plt.title("Race time")
-    # plt.plot(speed_range, race_time)
-    # plt.grid()
-    # plt.show()
+    # if show_info:
+    titles = ["Energy", "Penalty", "Race time (s)"]
+    y = [final_energy_level, penalty, race_time]
+    for i in range(len(y)):
+        plt.subplot(1, 3, i + 1)
+        plt.title(titles[i])
+        plt.plot(speed_range, y[i])
+        plt.grid()
+    plt.savefig("logs/Const speed method "
+                + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
+                + ".png")  # TODO refactor
+    plt.show()
 
     def func_to_minimize(section_speed, track):
         section_speeds = [section_speed] * len(track.sections)
-        return func(section_speeds, track) + penalty_func(section_speeds, track)
+        return func(section_speeds, track) + penalty_func(section_speeds, track, continuous=True)
 
     possible_ind = [i for i in range(len(final_energy_level)) if final_energy_level[i] >= 0]
     bounds = [speed_range[possible_ind[0]], speed_range[possible_ind[-1]]]
@@ -155,3 +152,22 @@ def bruteforce_method(func, penalty_func, speed_range, track, show_info=False):
     optimal_speed = scipy.optimize.minimize_scalar(func_to_minimize, args=track, bounds=bounds, method="bounded")
 
     return optimal_speed.x
+
+
+def random_change(x, func, penalty_func, track, iter_num):
+    base_loss_value = func(x, track) + penalty_func(x, track)
+    better_x_value_pairs = []
+    # best_loss_value = base_loss_value
+    for i in range(iter_num):
+        # rand_vec = (np.random.rand(len(x)) - 0.5) * 2  # TODO test
+        rand_vec = np.random.rand(len(x)) - 0.5
+        new_x = [x1 + x2 for x1, x2 in zip(x, rand_vec)]
+        loss_value = func(new_x, track) + penalty_func(new_x, track)
+        if loss_value < base_loss_value:
+            better_x_value_pairs.append((new_x, loss_value))
+
+    print("Found {} better x values".format(len(better_x_value_pairs)))
+    better_x_value_pairs.sort(key=lambda x_value_pair: x_value_pair[1])
+    if len(better_x_value_pairs) > 0:
+        print("Best loss value = {}, Base loss value = {}".format(better_x_value_pairs[0][1], base_loss_value))
+    return better_x_value_pairs

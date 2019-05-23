@@ -58,15 +58,13 @@ class Track:
     @timeit
     def preprocess_track(self):
         self.convert2m()
-        self.compute_length()
-        self.compute_slope_angle()
+        # self.compute_length()  # Needed only for plotting
+        # self.compute_slope_angle()  # Needed only for plotting
 
-    @timeit
     def convert2m(self):
         self.sections.coordinates = self.sections.coordinates.apply(
             lambda coords: [deg2m(coords[0]), deg2m(coords[1]), coords[2]])
 
-    @timeit
     def compute_length(self):
         length_sum = 0.0
         for i in range(len(self.sections) - 1):
@@ -78,7 +76,6 @@ class Track:
             self.sections.iloc[i].length = length
             self.sections.iloc[i].length_sum = length_sum
 
-    @timeit
     def compute_slope_angle(self):
         for i in range(len(self.sections) - 1):
             self.sections.iloc[i].slope_angle = find_slope_angle(
@@ -166,8 +163,8 @@ class Track:
             latitude, longitude = self.sections.iloc[i].coordinates[0], self.sections.iloc[i].coordinates[1]
             datetime_cur = self.sections.iloc[i].arrival_time
             if net_available:
-                # cloudiness = get_weather_params_owm(latitude, longitude, datetime_cur)["clouds"]
-                cloudiness = DEFAULT_CLOUDNESS  # TODO delete
+                cloudiness = get_weather_params_owm(latitude, longitude, datetime_cur)["clouds"]
+                # cloudiness = DEFAULT_CLOUDNESS  # TODO delete
             else:
                 cloudiness = DEFAULT_CLOUDNESS
 
@@ -202,7 +199,7 @@ class Track:
             fig.suptitle(title)
 
         fig.tight_layout()
-        plt.show()
-        plt.savefig("logs/track_features"
+        plt.savefig("logs/track_features "
                     + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
                     + ".png")
+        plt.show()

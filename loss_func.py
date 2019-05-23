@@ -9,36 +9,43 @@ def compute_loss_func(section_speeds: list, track: Track):
     return sum([track.sections.loc[i].length / section_speeds[i] for i in range(len(track.sections))])
 
 
-def compute_total_penalty(section_speeds: list, track: Track):
+def compute_total_penalty(section_speeds: list, track: Track, continuous=True):
     """Computes total penalty according to energy levels and section speeds"""
     energy_levels = compute_energy_levels(track, section_speeds)
-    energy_level_penalty = compute_energy_level_penalty(energy_levels)
+    energy_level_penalty = compute_energy_level_penalty(energy_levels, continuous)
 
-    speed_penalty = compute_speed_penalty(section_speeds)
+    speed_penalty = compute_speed_penalty(section_speeds, continuous)
 
     total_penalty = energy_level_penalty + speed_penalty
     return total_penalty
 
 
-def box_penalty_func_factory(a, b):
-    """Creates continuous penalty function for box constraints: a < x < b"""
-    width = b - a
-    shift = a / (width / 2) + 1
+def box_penalty_func_factory(a, b, continuous=True):
+    """Creates penalty function for box constraints: a < x < b"""
+    if continuous:
+        width = b - a
+        shift = a / (width / 2) + 1
 
-    def inner(x, koef=20, deg=30):
-        return koef * (1 / (width / 2) * x - shift) ** deg
+        def inner(x, koef=20, deg=30):
+            return koef * (1 / (width / 2) * x - shift) ** deg
+    else:
+        def inner(x, penalty_value=3600):
+            if a < x < b:
+                return 0
+            else:
+                return penalty_value
     return inner
 
 
-def compute_speed_penalty(speeds: list):
+def compute_speed_penalty(speeds: list, continuous):
     """Penalizes speed values more than MAX_SPEED and less than 0"""
-    penalty_func = box_penalty_func_factory(0, MAX_SPEED)
+    penalty_func = box_penalty_func_factory(0, MAX_SPEED, continuous)
     return sum([penalty_func(x) for x in speeds])
 
 
-def compute_energy_level_penalty(energy_levels: list):
+def compute_energy_level_penalty(energy_levels: list, continuous):
     """Penalizes energy level values more than 100 and less than 0"""
-    penalty_func = box_penalty_func_factory(0, 100)
+    penalty_func = box_penalty_func_factory(0, 100, continuous)
     energy_levels_in_percents = list(map(get_energy_level_in_percents, energy_levels))
     # Starting from 1 due to full charge of battery at beginning of race
     return sum([penalty_func(x) for x in energy_levels_in_percents[1:]])
