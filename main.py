@@ -19,7 +19,7 @@ if not os.path.isdir("logs"):
 
 # Load race track
 track = Track()
-track.load_track_from_csv("track_Australia.csv")
+track.load_track_from_csv("data/track_Australia.csv")
 track.preprocess_track()
 # track.draw_track_features("Before combining")
 track.combine_points_to_sections(show_info=False)
