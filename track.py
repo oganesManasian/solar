@@ -39,8 +39,8 @@ class Track:
     Class for race's track.
     Consists of set of points with x, y, z coordinates and their features (solar radiation, distance to previous)
     """
-    MAX_SECTION_LENGTH = 20000
-    MAX_SLOPE_CHANGE = 0.15
+    MAX_SECTION_LENGTH = 30000  # 10000
+    MAX_SLOPE_CHANGE = 0.15  # 0.1
 
     sections = pd.DataFrame(columns=["length", "length_sum", "slope_angle", "coordinates",
                                      "solar_radiation", "arrival_time"])
@@ -58,12 +58,17 @@ class Track:
     @timeit
     def preprocess_track(self):
         self.convert2m()
-        # self.compute_length()  # Needed only for plotting
-        # self.compute_slope_angle()  # Needed only for plotting
+        self.compute_length()  # Needed only for plotting
+        self.compute_slope_angle()  # Needed only for plotting
+        self.convert2deg()
 
     def convert2m(self):
         self.sections.coordinates = self.sections.coordinates.apply(
             lambda coords: [deg2m(coords[0]), deg2m(coords[1]), coords[2]])
+
+    def convert2deg(self):
+        self.sections.coordinates = self.sections.coordinates.apply(
+            lambda coords: [m2deg(coords[0]), m2deg(coords[1]), coords[2]])
 
     def compute_length(self):
         length_sum = 0.0
@@ -85,6 +90,7 @@ class Track:
 
     @timeit
     def combine_points_to_sections(self, show_info=False):
+        self.convert2m()
         print("Before combining {} points".format(len(self.sections)))
         new_sections = pd.DataFrame(columns=["length", "length_sum", "slope_angle", "coordinates",
                                              "solar_radiation", "arrival_time"])
@@ -172,6 +178,25 @@ class Track:
 
             # Compute final solar radiation
             self.sections.at[i, "solar_radiation"] = solar_radiation_raw * (1 - cloudiness / 100)  # TODO tune formula
+
+    def draw_track_altitudes(self, title="Track altitudes"):
+        distance_covered = self.sections.length_sum / 1000
+        altitudes = [coord[2] for coord in self.sections.coordinates]
+
+        plt.xlabel("Distance covered (km)")
+        plt.ylabel("Altitude (m)")
+        plt.title(title)
+        plt.grid()
+        figure = plt.gcf()
+        figure.set_size_inches(15, 10)
+        plt.plot(distance_covered, altitudes)
+        plt.savefig("logs/" + title + " "
+                    + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
+                    + ".png")
+        plt.show()
+
+    def draw_solar_radiation(self, title="Solar radiation"):
+        pass
 
     def draw_track_features(self, title=None):
         distance_covered = []

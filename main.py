@@ -20,13 +20,16 @@ if not os.path.isdir("logs"):
 # Load race track
 track = Track()
 track.load_track_from_csv("data/track_Australia.csv")
-track.preprocess_track()
-# track.draw_track_features("Before combining")
+# track.preprocess_track()
+# track.draw_track_altitudes("Track altitudes before combining")
 track.combine_points_to_sections(show_info=False)
+# track.draw_track_altitudes("Track altitudes after combining")
+
 init_speeds = [INIT_SPEED] * len(track.sections)
 track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, init_speeds)
 track.compute_weather_params()
 # track.draw_track_features("After combining")
+
 # track.sections = track.sections[:10]  # Taking only small part of track for speeding up tests
 
 # Test that optimization is possible
@@ -40,7 +43,7 @@ base_speed = optimization_methods.bruteforce_method(compute_loss_func,
                                                     np.linspace(OPTIMAL_SPEED_BOUNDS[0], OPTIMAL_SPEED_BOUNDS[1],
                                                                 (OPTIMAL_SPEED_BOUNDS[1] - OPTIMAL_SPEED_BOUNDS[0]) * 3),
                                                     track,
-                                                    show_info=False)
+                                                    show_info=True)
 print("Base speed:", base_speed)
 base_speeds = [base_speed] * len(track.sections)
 track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, base_speeds)
@@ -52,15 +55,15 @@ print("Init loss:", compute_loss_func(base_speeds, track),
       "\nInit penalty:", compute_total_penalty(base_speeds, track, continuous=False))
 
 # def func_to_minimize(section_speeds: list, track: Track):
-#     return compute_loss_func(section_speeds, track) + 1 * compute_total_penalty(section_speeds, track)
+#     return compute_loss_func(section_speeds, track) + compute_total_penalty(section_speeds, track, continuous=False)
 #
 #
-# optimal_speeds, _ = optimization_methods.minimize(func=func_to_minimize,
-#                                                   x0=init_speeds,
-#                                                   args=(track),
-#                                                   method="L-BFGS-B",
-#                                                   tol=1e-5,
-#                                                   show_info=True)
+# optimal_speeds, _ = optimization_methods.minimize_unconstrained(func=func_to_minimize,
+#                                                                 x0=init_speeds,
+#                                                                 args=(track),
+#                                                                 method="L-BFGS-B",
+#                                                                 tol=1e-5,
+#                                                                 show_info=True)
 
 optimal_speeds = optimization_methods.exterior_penalty_method(func=compute_loss_func,
                                                               penalty_func=compute_total_penalty,
