@@ -36,12 +36,12 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
 
         if show_info:
             print("Starting internal minimization")
-        new_x, success = minimize(func=func_to_minimize,
-                                  x0=x,
-                                  args=args,
-                                  method="L-BFGS-B",
-                                  tol=tol,
-                                  show_info=show_info)
+        new_x, success = minimize_unconstrained(func=func_to_minimize,
+                                                x0=x,
+                                                args=args,
+                                                method="L-BFGS-B",
+                                                tol=tol,
+                                                show_info=show_info)
 
         loss_function_value = func(new_x, args)
         penalty_function_value = penalty_func(new_x, args, continuous=False)
@@ -89,7 +89,7 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
 
 
 @timeit
-def minimize(func, x0, method="L-BFGS-B", args=None, tol=1e-3, show_info=False):
+def minimize_unconstrained(func, x0, method="L-BFGS-B", args=None, tol=1e-3, show_info=False):
     """Minimizes func without constraints using chosen method with scipy.optimize package"""
     res = scipy.optimize.minimize(func, x0, method=method, args=args, tol=tol, options={'disp': False},
                                   callback=MinimizeCallback(func, args, show_info))
@@ -157,12 +157,12 @@ def bruteforce_method(func, penalty_func, speed_range, track, show_info=False):
     bounds = [speed_range[possible_ind[0]], speed_range[possible_ind[-1]]]
     print("Bounds for base speed:", bounds)
     optimal_speed = scipy.optimize.minimize_scalar(func_to_minimize, args=track, bounds=bounds, method="bounded")
-
+    print("Successful minimization?", optimal_speed.success)
     return optimal_speed.x
 
 
 def random_change(x, func, penalty_func, track, iter_num):
-    base_loss_value = func(x, track) + penalty_func(x, track)
+    base_loss_value = func(x, track) + penalty_func(x, track, continuous=False)
     better_x_value_pairs = []
     # best_loss_value = base_loss_value
     for i in range(iter_num):
