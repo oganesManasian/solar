@@ -1,3 +1,5 @@
+import os
+import pickle
 from math import sin, cos, radians
 import requests
 import forecastio
@@ -30,11 +32,15 @@ def compute_solar_radiation(latitude, datetime_cur):
 
 def get_weather_params_owm(latitude, longitude, datetime):
     """Get 5 day forecast of cloudiness and temperature using open weather map API"""
-    api_key = "0c42f7f6b53b244c78a418f4f181282a"
-    # api_key_reserve = "b6907d289e10d714a6e88b30761fae22"
-    api_address = 'http://api.openweathermap.org/data/2.5/forecast?lat={}&lon={}&appid=' + api_key
-    url = api_address.format(latitude, longitude)
-    json_data = requests.get(url).json()
+    if os.path.isfile("weather"):
+        json_data = pickle.load("weather")
+    else:
+        api_key = "0c42f7f6b53b244c78a418f4f181282a"
+        # api_key_reserve = "b6907d289e10d714a6e88b30761fae22"
+        api_address = 'http://api.openweathermap.org/data/2.5/forecast?lat={}&lon={}&appid=' + api_key
+        url = api_address.format(latitude, longitude)
+        json_data = requests.get(url).json()
+        pickle.dump(json_data, "weather")
 
     ind = 0
     while True:
@@ -48,10 +54,3 @@ def get_weather_params_owm(latitude, longitude, datetime):
     weather_params = {'temp': json_data['list'][ind]['main']['temp'],
                       'clouds': json_data['list'][ind]['clouds']['all']}
     return weather_params
-
-
-def get_weather_params_darksky(latitude, longitude):
-    """Get weather parameters (cloudiness, temperature) using darksky API"""
-    api_key = "0097352dafff637bf248d40a957b86a0"
-    forecast = forecastio.load_forecast(api_key, latitude, longitude)
-    return forecast.currently()
