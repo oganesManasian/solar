@@ -32,7 +32,7 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
                   "mu:", mu)
 
         def func_to_minimize(section_speeds: list, track: Track):
-                return func(section_speeds, track) + mu * penalty_func(section_speeds, track, continuous=True)
+            return func(section_speeds, track) + mu * penalty_func(section_speeds, track, continuous=True)
 
         if show_info:
             print("Starting internal minimization")
@@ -45,16 +45,19 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
 
         loss_function_value = func(new_x, args)
         penalty_function_value = penalty_func(new_x, args, continuous=False)
-        mu_x_penalty_function_value = mu * penalty_func(new_x, args, continuous=True)
+        mu_x_penalty_function_value = mu * penalty_func(new_x, args, continuous=False)
         average_speed = np.mean(new_x)
+        # average_speed = sum([new_x[i] * args.sections.loc[i].length for i in range(len(new_x))]) \
+        #                 / sum([args.sections.loc[i].length for i in range(len(new_x))])  # TODO test it
         speed_vector_norm = np.linalg.norm(new_x, 1)
         speed_vector_change_norm = np.linalg.norm(new_x - x, 1)
-        optimization_step_description.loc[len(optimization_step_description)] = (step, mu,
-                                                                                 loss_function_value,
-                                                                                 penalty_function_value,
-                                                                                 mu_x_penalty_function_value,
-                                                                                 average_speed, speed_vector_norm,
-                                                                                 speed_vector_change_norm)
+        optimization_step_description.loc[len(optimization_step_description)] = (int(step), mu,
+                                                                                 round(loss_function_value, 3),
+                                                                                 round(penalty_function_value, 3),
+                                                                                 round(mu_x_penalty_function_value, 3),
+                                                                                 np.round(average_speed, 3),
+                                                                                 round(speed_vector_norm, 3),
+                                                                                 round(speed_vector_change_norm, 3))
 
         if not success:
             print("Internal minimization failed")
@@ -103,6 +106,7 @@ def minimize(func, x0, method="L-BFGS-B", args=None, tol=1e-3, show_info=False):
 
 class MinimizeCallback(object):
     """Prints loss value and penalty value at each iteration"""
+
     def __init__(self, loss_func, args, show_info):
         self.loss_func = loss_func
         self.args = args
@@ -129,7 +133,6 @@ def bruteforce_method(func, penalty_func, speed_range, track, show_info=False):
         penalty.append(penalty_func(speeds, track, continuous=False))
         race_time.append(func(speeds, track))
 
-    # if show_info:
     titles = ["Energy", "Penalty", "Race time (s)"]
     y = [final_energy_level, penalty, race_time]
     for i in range(len(y)):
@@ -140,7 +143,11 @@ def bruteforce_method(func, penalty_func, speed_range, track, show_info=False):
     plt.savefig("logs/Const speed method "
                 + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
                 + ".png")  # TODO refactor
-    plt.show()
+    if show_info:
+        plt.show()
+    else:
+        plt.clf()
+        plt.close()
 
     def func_to_minimize(section_speed, track):
         section_speeds = [section_speed] * len(track.sections)
@@ -162,7 +169,7 @@ def random_change(x, func, penalty_func, track, iter_num):
         # rand_vec = (np.random.rand(len(x)) - 0.5) * 2  # TODO test
         rand_vec = np.random.rand(len(x)) - 0.5
         new_x = [x1 + x2 for x1, x2 in zip(x, rand_vec)]
-        loss_value = func(new_x, track) + penalty_func(new_x, track)
+        loss_value = func(new_x, track) + penalty_func(new_x, track, continuous=False)
         if loss_value < base_loss_value:
             better_x_value_pairs.append((new_x, loss_value))
 
