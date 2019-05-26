@@ -15,11 +15,11 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
                             eps=1, tol=1e-3, mu0=1, betta=3, max_step=20,
                             show_info=False):
     """Minimizes function with constraints using exterior penalty method"""
-    optimization_step_description = pd.DataFrame(columns=["Step", "MU",
-                                                          "Loss function", "Penalty function",
-                                                          "MU * penalty function",
-                                                          "Average speed", "Speed vector norm",
-                                                          "Speed vector change norm"])
+    optimization_description = pd.DataFrame(columns=["Step", "MU",
+                                                     "Loss function", "Penalty function",
+                                                     "MU * penalty function",
+                                                     "Average speed", "Speed vector norm",
+                                                     "Speed vector change norm"])
     x = x0
     mu = mu0
     step = 1
@@ -51,13 +51,13 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
         #                 / sum([args.sections.loc[i].length for i in range(len(new_x))])  # TODO test it
         speed_vector_norm = np.linalg.norm(new_x, 1)
         speed_vector_change_norm = np.linalg.norm(new_x - x, 1)
-        optimization_step_description.loc[len(optimization_step_description)] = (int(step), mu,
-                                                                                 round(loss_function_value, 3),
-                                                                                 round(penalty_function_value, 3),
-                                                                                 round(mu_x_penalty_function_value, 3),
-                                                                                 np.round(average_speed, 3),
-                                                                                 round(speed_vector_norm, 3),
-                                                                                 round(speed_vector_change_norm, 3))
+        optimization_description.loc[len(optimization_description)] = (int(step), mu,
+                                                                       round(loss_function_value, 3),
+                                                                       round(penalty_function_value, 3),
+                                                                       round(mu_x_penalty_function_value, 3),
+                                                                       np.round(average_speed, 3),
+                                                                       round(speed_vector_norm, 3),
+                                                                       round(speed_vector_change_norm, 3))
 
         if not success:
             print("Internal minimization failed")
@@ -82,9 +82,9 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
 
         x = new_x
 
-    optimization_step_description.to_csv("logs/optimization "
-                                         + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
-                                         + ".csv", sep=";")
+    optimization_description.to_csv("logs/optimization "
+                                    + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
+                                    + ".csv", sep=";")
     return new_x
 
 
@@ -122,24 +122,28 @@ class MinimizeCallback(object):
 
 @timeit
 def bruteforce_method(func, penalty_func, speed_range, track, show_info=False):
+    from loss_func import MAX_SPEED
+    sections_with_max_speed = 5
     final_energy_level = []
     race_time = []
     penalty = []
     for speed in speed_range:
-        speeds = [speed] * len(track.sections)
+        speeds = [MAX_SPEED - 5] * sections_with_max_speed + [speed] * (len(track.sections) - sections_with_max_speed)
         energy_levels = energy_manager.compute_energy_levels(track, speeds)
 
         final_energy_level.append(energy_levels[-1])
         penalty.append(penalty_func(speeds, track, continuous=False))
         race_time.append(func(speeds, track))
 
-    titles = ["Energy", "Penalty", "Race time (s)"]
+    titles = ["Количество энергии", "Штраф", "Время прохождения марщрута (с)"]
     y = [final_energy_level, penalty, race_time]
     for i in range(len(y)):
         plt.subplot(1, 3, i + 1)
         plt.title(titles[i])
         plt.plot(speed_range, y[i])
         plt.grid()
+    figure = plt.gcf()
+    figure.set_size_inches(12, 8)
     plt.savefig("logs/Const speed method "
                 + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
                 + ".png")  # TODO refactor
@@ -151,7 +155,8 @@ def bruteforce_method(func, penalty_func, speed_range, track, show_info=False):
 
     def func_to_minimize(section_speed, track):
         section_speeds = [section_speed] * len(track.sections)
-        return func(section_speeds, track) + penalty_func(section_speeds, track, continuous=True)
+        # return func(section_speeds, track) + penalty_func(section_speeds, track, continuous=True)
+        return penalty_func(section_speeds, track, continuous=True)
 
     possible_ind = [i for i in range(len(final_energy_level)) if final_energy_level[i] >= 0]
     bounds = [speed_range[possible_ind[0]], speed_range[possible_ind[-1]]]

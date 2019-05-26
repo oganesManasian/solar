@@ -12,7 +12,7 @@ START_TIME = datetime.time(8, 30, 0)
 START_DATETIME = datetime.datetime.combine(START_DATE, START_TIME)
 DRIVE_TIME_BOUNDS = [8, 17]
 INIT_SPEED = 25
-OPTIMAL_SPEED_BOUNDS = [15, 40]
+OPTIMAL_SPEED_BOUNDS = [15, 25]
 
 if not os.path.isdir("logs"):
     os.mkdir("logs")
@@ -21,14 +21,14 @@ if not os.path.isdir("logs"):
 track = Track()
 track.load_track_from_csv("data/track_Australia.csv")
 # track.preprocess_track()
-# track.draw_track_altitudes("Track altitudes before combining")
+# track.draw_track_altitudes("График высот маршрута до предобработки")
 track.combine_points_to_sections(show_info=False)
-# track.draw_track_altitudes("Track altitudes after combining")
+# track.draw_track_altitudes("График высот маршрута после предобработки")
 
 init_speeds = [INIT_SPEED] * len(track.sections)
 track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, init_speeds)
 track.compute_weather_params()
-# track.draw_track_features("After combining")
+# track.draw_track_features("Ключевые параметры маршрута")
 
 # track.sections = track.sections[:10]  # Taking only small part of track for speeding up tests
 
@@ -41,7 +41,7 @@ assert (energy_levels_test[-1] >= 0), "Too little energy to cover the distance!"
 base_speed = optimization_methods.bruteforce_method(compute_loss_func,
                                                     compute_total_penalty,
                                                     np.linspace(OPTIMAL_SPEED_BOUNDS[0], OPTIMAL_SPEED_BOUNDS[1],
-                                                                (OPTIMAL_SPEED_BOUNDS[1] - OPTIMAL_SPEED_BOUNDS[0]) * 3),
+                                                                (OPTIMAL_SPEED_BOUNDS[1] - OPTIMAL_SPEED_BOUNDS[0]) * 4),
                                                     track,
                                                     show_info=True)
 print("Base speed:", base_speed)
@@ -79,17 +79,19 @@ print("Final loss:", compute_loss_func(optimal_speeds, track),
 print("Total travel time:", round(compute_loss_func(optimal_speeds, track) / 3600, 2), "hours")
 
 # Try to find better solution in point viсinity
-optimization_methods.random_change(optimal_speeds, compute_loss_func, compute_total_penalty, track, iter_num=1000)
+optimization_methods.random_change(optimal_speeds, compute_loss_func, compute_total_penalty, track, iter_num=100)
 
 # Solution visualisation
 speeds = list(optimal_speeds[:])
 speeds.append(speeds[-1])
 plt.step(range(len(speeds)), speeds, where='post')
 plt.grid()
-plt.title("Optimal speed")
-plt.xlabel("Sector №")
+plt.title("Оптимальная скорость")
+plt.xlabel("Номер секции")
 plt.xticks(range(len(optimal_speeds)), rotation=90)
-plt.ylabel("Speed (m/s)")
+plt.ylabel("Скорость (м/с)")
+figure = plt.gcf()
+figure.set_size_inches(12, 8)
 plt.savefig("logs/Optimal speed "
             + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
             + ".png")  # TODO refactor
@@ -110,16 +112,21 @@ model_params.to_csv("logs/model_params "
 solar_radiation_levels = model_data["params"].solar_radiation
 
 plt.subplot(2, 1, 1)
-plt.title("Optimal speeds")
+plt.title("Оптимальная скорость")
+# plt.xlabel("Номер секции")
+plt.ylabel("Скорость (м/с)")
 # plt.step(range(len(speeds)), speeds, where='post')
 plt.plot(range(len(optimal_speeds)), optimal_speeds)
 plt.grid()
 
 plt.subplot(2, 1, 2)
-plt.title("Solar radiation")
+# plt.title("Солнечная радиация")
+plt.xlabel("Номер секции")
+plt.ylabel("Уровень солнечной радиации (Вт/м^2)")
 plt.plot(range(len(optimal_speeds)), solar_radiation_levels)
 plt.grid()
-
+figure = plt.gcf()
+figure.set_size_inches(12, 8)
 plt.savefig("logs/Speed and solar radiation relationship "
             + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
             + ".png")  # TODO refactor

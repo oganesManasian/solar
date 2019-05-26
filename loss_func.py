@@ -2,7 +2,7 @@ from energy_manager import compute_energy_levels, get_energy_level_in_percents
 from track import Track
 
 MAX_SPEED = 40
-PENALTY_VALUE = 360000
+PENALTY_VALUE = 36000
 
 
 def compute_loss_func(section_speeds: list, track: Track):

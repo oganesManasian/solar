@@ -39,8 +39,16 @@ class Track:
     Class for race's track.
     Consists of set of points with x, y, z coordinates and their features (solar radiation, distance to previous)
     """
-    MAX_SECTION_LENGTH = 30000  # 10000
-    MAX_SLOPE_CHANGE = 0.15  # 0.1
+
+    # 104 sections
+    MAX_SECTION_LENGTH = 30000
+    MAX_SLOPE_CHANGE = 0.15
+    # 166 sections
+    # MAX_SECTION_LENGTH = 20000
+    # MAX_SLOPE_CHANGE = 0.1
+    # ___ sections
+    # MAX_SECTION_LENGTH = 10000
+    # MAX_SLOPE_CHANGE = 0.1
 
     sections = pd.DataFrame(columns=["length", "length_sum", "slope_angle", "coordinates",
                                      "solar_radiation", "arrival_time"])
@@ -179,16 +187,16 @@ class Track:
             # Compute final solar radiation
             self.sections.at[i, "solar_radiation"] = solar_radiation_raw * (1 - cloudiness / 100)  # TODO tune formula
 
-    def draw_track_altitudes(self, title="Track altitudes"):
+    def draw_track_altitudes(self, title="График высот маршрута"):
         distance_covered = self.sections.length_sum / 1000
         altitudes = [coord[2] for coord in self.sections.coordinates]
 
-        plt.xlabel("Distance covered (km)")
-        plt.ylabel("Altitude (m)")
+        plt.xlabel("Пройденное расстояние (км)")
+        plt.ylabel("Высота (м)")
         plt.title(title)
         plt.grid()
         figure = plt.gcf()
-        figure.set_size_inches(15, 10)
+        figure.set_size_inches(12, 8)
         plt.plot(distance_covered, altitudes)
         plt.savefig("logs/" + title + " "
                     + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
@@ -211,12 +219,14 @@ class Track:
             solar_radiation.append(section.solar_radiation)
             arrival_time.append(section.arrival_time)
 
-        titles = ["Altitudes", "Slope angle", "Solar radiation", "Arrival time"]
+        titles = ["Высота", "Углы наклона", "Солнечная радиация", "Время прибытия"]
+        ylables = ["Высота (м)", "Угол наклона (радиан)", "Солнечная радиация (Вт/м^2)", "Время прибытия"]
         y = [altitudes, slope_angle, solar_radiation, arrival_time]
         fig, axs = plt.subplots(1, 4, figsize=(10, 10))
         for i in range(len(titles)):
             axs[i].grid(True)
-            axs[i].set_xlabel("Distance covered (km)")
+            axs[i].set_xlabel("Пройденное расстояние (км)")
+            axs[i].set_ylabel(ylables[i])
             axs[i].set_title(titles[i])
             axs[i].plot(distance_covered, y[i])
 

@@ -32,17 +32,11 @@ def compute_solar_radiation(latitude, datetime_cur):
 
 def get_weather_params_owm(latitude, longitude, datetime):
     """Get 5 day forecast of cloudiness and temperature using open weather map API"""
-    if os.path.isfile("weather.pickle"):
-        with open('weather.pickle', 'rb') as f:
-            json_data = pickle.load(f)
-    else:
-        api_key = "0c42f7f6b53b244c78a418f4f181282a"
-        # api_key_reserve = "b6907d289e10d714a6e88b30761fae22"
-        api_address = 'http://api.openweathermap.org/data/2.5/forecast?lat={}&lon={}&appid=' + api_key
-        url = api_address.format(latitude, longitude)
-        json_data = requests.get(url).json()
-        with open('weather.pickle', 'wb') as f:
-            pickle.dump(json_data, f)
+    api_key = "0c42f7f6b53b244c78a418f4f181282a"
+    # api_key_reserve = "b6907d289e10d714a6e88b30761fae22"
+    api_address = 'http://api.openweathermap.org/data/2.5/forecast?lat={}&lon={}&appid=' + api_key
+    url = api_address.format(latitude, longitude)
+    json_data = requests.get(url).json()
 
     ind = 0
     while True:
