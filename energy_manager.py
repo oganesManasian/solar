@@ -4,28 +4,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from track import Track
 from utils import nonnegative, print_res_if_debug
+from parameters import BATTER_CHARGE_MAX, EFFICIENCY_BATTERY
+from parameters import GRAVITY_ACCELERATION, FRICTION_RESISTANCE_RATE, AIR_DENSITY
+from parameters import VEHICLE_FRONT_AREA, FRONTAL_DENSITY_RATE, VEHICLE_PANEL_AREA, VEHICLE_EQUIPMENT_POWER, \
+    VEHICLE_WEIGHT, EFFICIENCY_INCOME, EFFICIENCY_OUTCOME
 
 DEBUG_FUNC_RESULTS = False
-
-# Battery
-ENERGY_LEVEL_PERCENT_MAX = 100
-ENERGY_LEVEL_PERCENT_MIN = 0
-BATTER_CHARGE_MAX = 5100 * 3600
-BATTER_CHARGE_MIN = 0  # W * h
-EFFICIENCY_BATTERY = 0.98
-# Environment
-# SOLAR_RADIATION = 500  # W / m²  # Unnecessary more
-GRAVITY_ACCELERATION = 9.81
-FRICTION_RESISTANCE_RATE = 0.0025
-AIR_DENSITY = 1.18
-# Vehicle
-VEHICLE_FRONT_AREA = 0.6  # m²
-FRONTAL_DENSITY_RATE = 0.15
-VEHICLE_PANEL_AREA = 4  # m²
-VEHICLE_EQUIPMENT_POWER = 40  # W
-VEHICLE_WEIGHT = 385  # kg
-EFFICIENCY_INCOME = 0.2 * 0.985
-EFFICIENCY_OUTCOME = 0.94  # TODO add modeling
 
 
 def compute_energy_levels(track: Track, section_speeds: list):

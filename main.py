@@ -1,3 +1,4 @@
+from parameters import INIT_SPEED, START_DATETIME, DRIVE_TIME_BOUNDS, OPTIMAL_SPEED_BOUNDS
 from track import Track
 import energy_manager
 import optimization_methods
@@ -6,13 +7,6 @@ from loss_func import compute_loss_func, compute_total_penalty
 import datetime
 import os
 import numpy as np
-
-START_DATE = datetime.date.today()  # datetime.date(2019, 10, 13)
-START_TIME = datetime.time(8, 30, 0)
-START_DATETIME = datetime.datetime.combine(START_DATE, START_TIME)
-DRIVE_TIME_BOUNDS = [8, 17]
-INIT_SPEED = 25
-OPTIMAL_SPEED_BOUNDS = [15, 25]
 
 if not os.path.isdir("logs"):
     os.mkdir("logs")

@@ -1,7 +1,5 @@
 import datetime
-
 import scipy.optimize
-
 import energy_manager
 from utils import timeit
 from track import Track
@@ -12,7 +10,7 @@ import matplotlib.pyplot as plt
 
 @timeit
 def exterior_penalty_method(func, penalty_func, x0, args=None,
-                            eps=1, tol=1e-3, mu0=1, betta=3, max_step=20,
+                            eps=1, tol=1e-3, mu0=0.1, betta=3, max_step=20,
                             show_info=False):
     """Minimizes function with constraints using exterior penalty method"""
     optimization_description = pd.DataFrame(columns=["Step", "MU",
@@ -122,7 +120,7 @@ class MinimizeCallback(object):
 
 @timeit
 def bruteforce_method(func, penalty_func, speed_range, track, show_info=False):
-    from loss_func import MAX_SPEED
+    from parameters import MAX_SPEED
     sections_with_max_speed = 5
     final_energy_level = []
     race_time = []
@@ -159,6 +157,8 @@ def bruteforce_method(func, penalty_func, speed_range, track, show_info=False):
         return penalty_func(section_speeds, track, continuous=True)
 
     possible_ind = [i for i in range(len(final_energy_level)) if final_energy_level[i] >= 0]
+    if len(possible_ind) == 0:
+        possible_ind = [0, 0]
     bounds = [speed_range[possible_ind[0]], speed_range[possible_ind[-1]]]
     print("Bounds for base speed:", bounds)
     optimal_speed = scipy.optimize.minimize_scalar(func_to_minimize, args=track, bounds=bounds, method="bounded")

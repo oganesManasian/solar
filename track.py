@@ -1,14 +1,12 @@
 import datetime
 import math
+
+from parameters import MAX_SLOPE_CHANGE, MAX_SECTION_LENGTH, DEFAULT_CLOUDNESS
 from utils import timeit, check_net_connection
 import matplotlib.pyplot as plt
 import pandas as pd
-from environment_data import compute_solar_radiation, get_weather_params_owm
+from environment_data import compute_solar_radiation, get_weather_params, get_solar_radiation
 import copy
-from scipy.io import loadmat
-
-DEFAULT_SOLAR_RADIATION = 1000
-DEFAULT_CLOUDNESS = 0
 
 
 def find_distance(start_pnt, end_pnt):
@@ -39,16 +37,6 @@ class Track:
     Class for race's track.
     Consists of set of points with x, y, z coordinates and their features (solar radiation, distance to previous)
     """
-
-    # 104 sections
-    MAX_SECTION_LENGTH = 30000
-    MAX_SLOPE_CHANGE = 0.15
-    # 166 sections
-    # MAX_SECTION_LENGTH = 20000
-    # MAX_SLOPE_CHANGE = 0.1
-    # ___ sections
-    # MAX_SECTION_LENGTH = 10000
-    # MAX_SLOPE_CHANGE = 0.1
 
     sections = pd.DataFrame(columns=["length", "length_sum", "slope_angle", "coordinates",
                                      "solar_radiation", "arrival_time"])
@@ -107,16 +95,18 @@ class Track:
         section_end = self.sections.iloc[1].coordinates
         section_dist = find_distance(section_start, section_end)
         for i in range(2, len(self.sections)):
-            if show_info: print("\n", i)
+            if show_info:
+                print("\n", i)
             cur_point = self.sections.iloc[i].coordinates
 
             previous_slope_angle = find_slope_angle(section_start, section_end)
             cur_slope_angle = find_slope_angle(section_end, cur_point)
             slope_angle_diff = abs(previous_slope_angle - cur_slope_angle)
             dist = find_distance(section_end, cur_point)
-            if show_info: print("Slope angle diff {}, Dist {}, Section dist + dist {}".format(slope_angle_diff,
-                                                                                              dist,
-                                                                                              section_dist + dist))
+            if show_info:
+                print("Slope angle diff {}, Dist {}, Section dist + dist {}".format(slope_angle_diff,
+                                                                                    dist,
+                                                                                    section_dist + dist))
 
             def add_new_section():  # TODO maybe pass arguments explicitly
                 if len(new_sections) == 0:
@@ -128,14 +118,16 @@ class Track:
                 z = section_start[2]
                 # coordinates = list(map(m2deg, section_start))  # TODO make more clear de2m and reverse translations
                 new_sections.loc[len(new_sections)] = ([section_dist, section_dist_sum, previous_slope_angle,
-                                                          [x, y, z], None, None])
+                                                        [x, y, z], None, None])
 
-            if slope_angle_diff < self.MAX_SLOPE_CHANGE and section_dist + dist < self.MAX_SECTION_LENGTH:
-                if show_info: print("Decision: combining")
+            if slope_angle_diff < MAX_SLOPE_CHANGE and section_dist + dist < MAX_SECTION_LENGTH:
+                if show_info:
+                    print("Decision: combining")
                 section_dist += dist
                 section_end = cur_point
             else:
-                if show_info: print("Decision: separating")
+                if show_info:
+                    print("Decision: separating")
                 add_new_section()
 
                 # Prepare for next section
@@ -144,7 +136,8 @@ class Track:
                 section_dist = dist
 
             if i == len(self.sections) - 1:  # Separating last point
-                if show_info: print("Separating last section")
+                if show_info:
+                    print("Separating last section")
                 add_new_section()
 
         self.sections = new_sections
@@ -172,17 +165,15 @@ class Track:
     @timeit
     def compute_weather_params(self):
         net_available = check_net_connection()
-
         for i in range(len(self.sections)):
             latitude, longitude = self.sections.iloc[i].coordinates[0], self.sections.iloc[i].coordinates[1]
             datetime_cur = self.sections.iloc[i].arrival_time
             if net_available:
-                cloudiness = get_weather_params_owm(latitude, longitude, datetime_cur)["clouds"]
-                # cloudiness = DEFAULT_CLOUDNESS  # TODO delete
+                solar_radiation_raw = get_solar_radiation(latitude, longitude, datetime_cur)
+                cloudiness = get_weather_params(latitude, longitude, datetime_cur)["clouds"]
             else:
+                solar_radiation_raw = compute_solar_radiation(latitude, datetime_cur)
                 cloudiness = DEFAULT_CLOUDNESS
-
-            solar_radiation_raw = compute_solar_radiation(latitude, datetime_cur)
 
             # Compute final solar radiation
             self.sections.at[i, "solar_radiation"] = solar_radiation_raw * (1 - cloudiness / 100)  # TODO tune formula
