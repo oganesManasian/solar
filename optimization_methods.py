@@ -44,9 +44,8 @@ def exterior_penalty_method(func, penalty_func, x0, args=None,
         loss_function_value = func(new_x, args)
         penalty_function_value = penalty_func(new_x, args, continuous=False)
         mu_x_penalty_function_value = mu * penalty_func(new_x, args, continuous=False)
-        average_speed = np.mean(new_x)
-        # average_speed = sum([new_x[i] * args.sections.loc[i].length for i in range(len(new_x))]) \
-        #                 / sum([args.sections.loc[i].length for i in range(len(new_x))])  # TODO test it
+        average_speed = sum([new_x[i] * args.sections.loc[i].length for i in range(len(new_x))]) \
+                        / sum(args.sections.length)
         speed_vector_norm = np.linalg.norm(new_x, 1)
         speed_vector_change_norm = np.linalg.norm(new_x - x, 1)
         optimization_description.loc[len(optimization_description)] = (int(step), mu,
@@ -169,7 +168,6 @@ def bruteforce_method(func, penalty_func, speed_range, track, show_info=False):
 def random_change(x, func, penalty_func, track, iter_num):
     base_loss_value = func(x, track) + penalty_func(x, track, continuous=False)
     better_x_value_pairs = []
-    # best_loss_value = base_loss_value
     for i in range(iter_num):
         # rand_vec = (np.random.rand(len(x)) - 0.5) * 2  # TODO test
         rand_vec = np.random.rand(len(x)) - 0.5

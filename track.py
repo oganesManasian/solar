@@ -38,6 +38,10 @@ class Track:
     Consists of set of points with x, y, z coordinates and their features (solar radiation, distance to previous)
     """
 
+    def __init__(self, max_section_length=MAX_SECTION_LENGTH, max_section_slope_angle=MAX_SLOPE_CHANGE):
+        self.max_section_length = max_section_length
+        self.max_section_slope_angle = max_section_slope_angle
+
     sections = pd.DataFrame(columns=["length", "length_sum", "slope_angle", "coordinates",
                                      "solar_radiation", "arrival_time"])
 
@@ -120,7 +124,7 @@ class Track:
                 new_sections.loc[len(new_sections)] = ([section_dist, section_dist_sum, previous_slope_angle,
                                                         [x, y, z], None, None])
 
-            if slope_angle_diff < MAX_SLOPE_CHANGE and section_dist + dist < MAX_SECTION_LENGTH:
+            if slope_angle_diff < self.max_section_slope_angle and section_dist + dist < self.max_section_length:
                 if show_info:
                     print("Decision: combining")
                 section_dist += dist
