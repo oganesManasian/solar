@@ -1,15 +1,17 @@
 import datetime
 
 # Schedule
-UTC_SHIFT = datetime.datetime.utcnow() - datetime.datetime.now()
-START_DATE = datetime.date.today()  # datetime.date(2019, 10, 13) - real competition start date
+# UTC_OFFSET = datetime.datetime.utcnow() - datetime.datetime.now()
+UTC_OFFSET = datetime.timedelta(hours=-10.5)  # Adelaide utc offset
+START_DATE = datetime.date.today() + datetime.timedelta(days=1)
+# START_DATE = datetime.date(2019, 10, 13) - real competition start date
 START_TIME = datetime.time(8, 30, 0)
 START_DATETIME = datetime.datetime.combine(START_DATE, START_TIME)
 DRIVE_TIME_BOUNDS = [8, 17]
 
 # Optimization
-INIT_SPEED = 25
-OPTIMAL_SPEED_BOUNDS = [10, 25]
+INIT_SPEED = 20
+OPTIMAL_SPEED_BOUNDS = [15, 25]
 MAX_SPEED = 40
 PENALTY_VALUE = 36000
 MAX_PENALTY = 1e9
@@ -21,7 +23,7 @@ MAX_SLOPE_CHANGE = 0.15
 # 166 sections
 # MAX_SECTION_LENGTH = 20000
 # MAX_SLOPE_CHANGE = 0.1
-# ___ sections
+# 318 sections
 # MAX_SECTION_LENGTH = 10000
 # MAX_SLOPE_CHANGE = 0.1
 
@@ -34,7 +36,7 @@ EFFICIENCY_BATTERY = 0.98
 
 # Environment
 DEFAULT_SOLAR_RADIATION = 1000
-DEFAULT_CLOUDNESS = 0
+DEFAULT_CLOUDNESS = 10
 GRAVITY_ACCELERATION = 9.81
 FRICTION_RESISTANCE_RATE = 0.0025
 AIR_DENSITY = 1.18

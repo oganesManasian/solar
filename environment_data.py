@@ -1,6 +1,40 @@
 from math import sin, cos, radians
 import requests
-from parameters import UTC_SHIFT, SOLAR_CONSTANT, NORMAL_ATMOUSPHERIC_PRESSURE, TRANSMITTANCE
+from parameters import UTC_OFFSET, SOLAR_CONSTANT, NORMAL_ATMOUSPHERIC_PRESSURE, TRANSMITTANCE, DEFAULT_CLOUDNESS
+
+
+def get_solar_radiation(latitude, longitude, datetime):
+    solar_radiation = get_solar_radiation_solcast(latitude, longitude, datetime)
+    if solar_radiation is None:
+        solar_radiation_raw = compute_solar_radiation(latitude, datetime)
+        cloudiness = get_weather_params_owm(latitude, longitude, datetime)["clouds"]
+        if cloudiness is None:
+            cloudiness = DEFAULT_CLOUDNESS
+        solar_radiation = solar_radiation_raw * (1 - cloudiness / 100)  # TODO tune formula
+    return solar_radiation
+
+
+def get_solar_radiation_solcast(latitude, longitude, datetime):
+    """Get forecast of solar radiation using solcast api (provides 6 day forecast)"""
+    datetime_cur_utc = datetime + UTC_OFFSET
+    api_key = "-7kCHxclHSKX7bKm6dasBBSBhL-lRGwq"
+    api_address = "https://api.solcast.com.au/radiation/forecasts?longitude={}&latitude={}&api_key={}&format=json"
+    url = api_address.format(longitude, latitude, api_key)
+    json_data = requests.get(url).json()
+    if 'forecasts' in json_data.keys():
+        forecast_list = json_data['forecasts']
+        ind = 0
+        while True:
+            datetime_forecast_str = forecast_list[ind]['period_end']
+            datetime_forecast = datetime.strptime(datetime_forecast_str, "%Y-%m-%dT%H:%M:%S.%f0Z")
+
+            if datetime_forecast > datetime_cur_utc or ind == len(forecast_list) - 1:
+                break
+            else:
+                ind += 1
+        return forecast_list[ind]['ghi90']
+    else:
+        return None
 
 
 def compute_solar_radiation(latitude, datetime):
@@ -24,45 +58,27 @@ def compute_solar_radiation(latitude, datetime):
         return 0
 
 
-def get_solar_radiation(latitude, longitude, datetime):
-    """Get forecast of solar radiation using solcast api (provides 6 day forecast)"""
-    datetime_cur_utc = datetime + UTC_SHIFT
-    api_key = "-7kCHxclHSKX7bKm6dasBBSBhL-lRGwq"
-    api_address = "https://api.solcast.com.au/radiation/forecasts?longitude={}&latitude={}&api_key={}&format=json"
-    url = api_address.format(longitude, latitude, api_key)
-    json_data = requests.get(url).json()
-    forecast_list = json_data['forecasts']
-    ind = 0
-    while True:
-        datetime_forecast_str = forecast_list[ind]['period_end']
-        datetime_forecast = datetime.strptime(datetime_forecast_str, "%Y-%m-%dT%H:%M:%S.%f0Z")
-
-        if datetime_forecast > datetime_cur_utc or ind == len(forecast_list) - 1:
-            break
-        else:
-            ind += 1
-    return forecast_list[ind]['ghi90']
-
-
-def get_weather_params(latitude, longitude, datetime):
+def get_weather_params_owm(latitude, longitude, datetime):
     """Get forecast of cloudiness and temperature using open weather map API (provides 5 day forecast)"""
-    datetime_cur_utc = datetime + UTC_SHIFT
+    datetime_cur_utc = datetime + UTC_OFFSET
     api_key = "0c42f7f6b53b244c78a418f4f181282a"
     # api_key_reserve = "b6907d289e10d714a6e88b30761fae22"
     api_address = 'http://api.openweathermap.org/data/2.5/forecast?lat={}&lon={}&appid={}'
     url = api_address.format(latitude, longitude, api_key)
     json_data = requests.get(url).json()
-    forecast_list = json_data['list']
+    if 'list' in json_data.keys():
+        forecast_list = json_data['list']
+        ind = 0
+        while True:
+            datetime_forecast_str = forecast_list[ind]['dt_txt']
+            datetime_forecast = datetime.strptime(datetime_forecast_str, '%Y-%m-%d %H:%M:%S')
+            if datetime_forecast > datetime_cur_utc or ind == len(json_data['list']) - 1:
+                break
+            else:
+                ind += 1
 
-    ind = 0
-    while True:
-        datetime_forecast_str = forecast_list[ind]['dt_txt']
-        datetime_forecast = datetime.strptime(datetime_forecast_str, '%Y-%m-%d %H:%M:%S')
-        if datetime_forecast > datetime_cur_utc or ind == len(json_data['list']) - 1:
-            break
-        else:
-            ind += 1
-
-    weather_params = {'temp': json_data['list'][ind]['main']['temp'],
-                      'clouds': json_data['list'][ind]['clouds']['all']}
-    return weather_params
+        weather_params = {'temp': json_data['list'][ind]['main']['temp'],
+                          'clouds': json_data['list'][ind]['clouds']['all']}
+        return weather_params
+    else:
+        return None

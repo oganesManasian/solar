@@ -1,11 +1,11 @@
 import datetime
 import math
 
-from parameters import MAX_SLOPE_CHANGE, MAX_SECTION_LENGTH, DEFAULT_CLOUDNESS
-from utils import timeit, check_net_connection
+from parameters import MAX_SLOPE_CHANGE, MAX_SECTION_LENGTH
+from utils import timeit
 import matplotlib.pyplot as plt
 import pandas as pd
-from environment_data import compute_solar_radiation, get_weather_params, get_solar_radiation
+from environment_data import get_solar_radiation
 import copy
 
 
@@ -164,19 +164,10 @@ class Track:
 
     @timeit
     def compute_weather_params(self):
-        net_available = check_net_connection()
         for i in range(len(self.sections)):
             latitude, longitude = self.sections.iloc[i].coordinates[0], self.sections.iloc[i].coordinates[1]
             datetime_cur = self.sections.iloc[i].arrival_time
-            if net_available:
-                solar_radiation_raw = get_solar_radiation(latitude, longitude, datetime_cur)
-                cloudiness = get_weather_params(latitude, longitude, datetime_cur)["clouds"]
-            else:
-                solar_radiation_raw = compute_solar_radiation(latitude, datetime_cur)
-                cloudiness = DEFAULT_CLOUDNESS
-
-            # Compute final solar radiation
-            self.sections.at[i, "solar_radiation"] = solar_radiation_raw * (1 - cloudiness / 100)  # TODO tune formula
+            self.sections.at[i, "solar_radiation"] = get_solar_radiation(latitude, longitude, datetime_cur)
 
     def draw_track_altitudes(self, title="График высот маршрута"):
         distance_covered = self.sections.length_sum / 1000
