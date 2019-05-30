@@ -143,14 +143,16 @@ def draw_energy_levels(energy_levels: list, energy_incomes: list, energy_outcome
 
     plt.plot(range(len(energy_outcomes)), energy_outcomes, "r-", label='Расход энергии')
 
-    plt.xticks(range(len(energy_levels)), rotation=90)
+    plt.xticks(ticks=[v for v in range(len(energy_levels)) if v % 5 == 0],
+               labels=[v for v in range(len(energy_levels)) if v % 5 == 0],
+               rotation=90)
     plt.legend()
     plt.grid()
     figure = plt.gcf()
     figure.set_size_inches(12, 8)
     plt.savefig("logs/Energy flow "
                 + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
-                + ".png")  # TODO refactor
+                + ".png")
     plt.show()
 
 

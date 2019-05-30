@@ -1,6 +1,7 @@
+import datetime
 import time
 import requests
-
+import matplotlib.pyplot as plt
 
 def timeit(method):
     def timed(*args, **kwards):
@@ -47,3 +48,49 @@ def check_net_connection():
     except requests.ConnectionError:
         print("Internet connection unavailable")
     return False
+
+
+def draw_solution(optimal_speeds):
+    speeds = list(optimal_speeds[:])
+    speeds.append(speeds[-1])
+    plt.step(range(len(speeds)), speeds, where='post')
+    plt.grid()
+    plt.title("Оптимальная скорость")
+    plt.xlabel("Номер секции")
+    # plt.xticks(range(len(optimal_speeds)), rotation=90)
+    plt.xticks(ticks=[v for v in range(len(optimal_speeds)) if v % 5 == 0],
+               labels=[v for v in range(len(optimal_speeds)) if v % 5 == 0],
+               rotation=90)
+    plt.ylabel("Скорость (м/с)")
+    figure = plt.gcf()
+    figure.set_size_inches(12, 8)
+    plt.tight_layout()
+    plt.savefig("logs/Optimal speed "
+                + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
+                + ".png")
+    plt.show()
+
+
+def draw_speed_solar_radiation_relation(optimal_speeds, solar_radiation_levels):
+    plt.subplot(2, 1, 1)
+    plt.title("Оптимальная скорость")
+    # plt.xlabel("Номер секции")
+    plt.ylabel("Скорость (м/с)")
+    # plt.step(range(len(speeds)), speeds, where='post')
+    plt.plot(range(len(optimal_speeds)), optimal_speeds)
+    plt.grid()
+
+    plt.subplot(2, 1, 2)
+    # plt.title("Солнечная радиация")
+    plt.xlabel("Номер секции")
+    plt.ylabel("Уровень солнечной радиации (Вт/м^2)")
+    plt.plot(range(len(optimal_speeds)), solar_radiation_levels)
+    plt.grid()
+    figure = plt.gcf()
+    figure.set_size_inches(12, 8)
+    plt.savefig("logs/Speed and solar radiation relationship "
+                + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
+                + ".png")
+
+    plt.tight_layout()
+    plt.show()

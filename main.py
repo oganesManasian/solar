@@ -7,6 +7,12 @@ from loss_func import compute_loss_func, compute_total_penalty
 import datetime
 import os
 import numpy as np
+from utils import draw_solution, draw_speed_solar_radiation_relation
+
+# font = {'family': 'normal',
+#         # 'weight': 'bold',
+#         'size': 14}
+# plt.rc('font', **font)
 
 if not os.path.isdir("logs"):
     os.mkdir("logs")
@@ -39,29 +45,18 @@ base_speed = optimization_methods.bruteforce_method(compute_loss_func,
                                                     track,
                                                     show_info=True)
 print("Base speed:", base_speed)
-base_speeds = [base_speed] * len(track.sections)
-track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, base_speeds)
+base_speed_vector = [base_speed] * len(track.sections)
+track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, base_speed_vector)
 track.compute_weather_params()
 # track.draw_track_features("Constant speed")
 
 # Optimize speed
-print("Init loss:", compute_loss_func(base_speeds, track),
-      "\nInit penalty:", compute_total_penalty(base_speeds, track, continuous=False))
-
-# def func_to_minimize(section_speeds: list, track: Track):
-#     return compute_loss_func(section_speeds, track) + compute_total_penalty(section_speeds, track, continuous=False)
-#
-#
-# optimal_speeds, _ = optimization_methods.minimize_unconstrained(func=func_to_minimize,
-#                                                                 x0=init_speeds,
-#                                                                 args=(track),
-#                                                                 method="L-BFGS-B",
-#                                                                 tol=1e-5,
-#                                                                 show_info=True)
+print("Init loss:", compute_loss_func(base_speed_vector, track),
+      "\nInit penalty:", compute_total_penalty(base_speed_vector, track, continuous=False))
 
 optimal_speeds = optimization_methods.exterior_penalty_method(func=compute_loss_func,
                                                               penalty_func=compute_total_penalty,
-                                                              x0=base_speeds,
+                                                              x0=base_speed_vector,
                                                               args=track,
                                                               eps=1,
                                                               tol=1e-3,
@@ -76,20 +71,11 @@ print("Total travel time:", round(compute_loss_func(optimal_speeds, track) / 360
 optimization_methods.random_change(optimal_speeds, compute_loss_func, compute_total_penalty, track, iter_num=100)
 
 # Solution visualisation
-speeds = list(optimal_speeds[:])
-speeds.append(speeds[-1])
-plt.step(range(len(speeds)), speeds, where='post')
-plt.grid()
-plt.title("Оптимальная скорость")
-plt.xlabel("Номер секции")
-plt.xticks(range(len(optimal_speeds)), rotation=90)
-plt.ylabel("Скорость (м/с)")
-figure = plt.gcf()
-figure.set_size_inches(12, 8)
-plt.savefig("logs/Optimal speed "
-            + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
-            + ".png")  # TODO refactor
-plt.show()
+draw_solution(optimal_speeds)
+
+# Find relation between solar radiation and vehicle speed
+solar_radiation_levels = track.sections.solar_radiation
+draw_speed_solar_radiation_relation(optimal_speeds, solar_radiation_levels)
 
 # Save params about model
 model_data = energy_manager.compute_energy_levels_full(track, optimal_speeds)
@@ -102,26 +88,3 @@ model_params.to_csv("logs/model_params "
                     + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
                     + ".csv", sep=";")
 
-# Find relation between solar radiation and vehicle speed
-solar_radiation_levels = model_data["params"].solar_radiation
-
-plt.subplot(2, 1, 1)
-plt.title("Оптимальная скорость")
-# plt.xlabel("Номер секции")
-plt.ylabel("Скорость (м/с)")
-# plt.step(range(len(speeds)), speeds, where='post')
-plt.plot(range(len(optimal_speeds)), optimal_speeds)
-plt.grid()
-
-plt.subplot(2, 1, 2)
-# plt.title("Солнечная радиация")
-plt.xlabel("Номер секции")
-plt.ylabel("Уровень солнечной радиации (Вт/м^2)")
-plt.plot(range(len(optimal_speeds)), solar_radiation_levels)
-plt.grid()
-figure = plt.gcf()
-figure.set_size_inches(12, 8)
-plt.savefig("logs/Speed and solar radiation relationship "
-            + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
-            + ".png")  # TODO refactor
-plt.show()
