@@ -16,11 +16,22 @@ def get_solar_radiation(latitude, longitude, datetime):
 
 def get_solar_radiation_solcast(latitude, longitude, datetime):
     """Get forecast of solar radiation using solcast api (provides 6 day forecast)"""
-    datetime_cur_utc = datetime + UTC_OFFSET
+    json_data = get_solar_radiation_json(latitude, longitude)
+    return get_solar_radiation_from_json(json_data, datetime)
+
+
+def get_solar_radiation_json(latitude, longitude):
+    """Request for forecast json"""
     api_key = "-7kCHxclHSKX7bKm6dasBBSBhL-lRGwq"
     api_address = "https://api.solcast.com.au/radiation/forecasts?longitude={}&latitude={}&api_key={}&format=json"
     url = api_address.format(longitude, latitude, api_key)
     json_data = requests.get(url).json()
+    return json_data
+
+
+def get_solar_radiation_from_json(json_data, datetime):
+    """Find most suitable forecast"""
+    datetime_cur_utc = datetime + UTC_OFFSET
     if 'forecasts' in json_data.keys():
         forecast_list = json_data['forecasts']
         ind = 0
@@ -60,12 +71,13 @@ def compute_solar_radiation(latitude, datetime):
 
 def get_weather_params_owm(latitude, longitude, datetime):
     """Get forecast of cloudiness and temperature using open weather map API (provides 5 day forecast)"""
-    datetime_cur_utc = datetime + UTC_OFFSET
     api_key = "0c42f7f6b53b244c78a418f4f181282a"
     # api_key_reserve = "b6907d289e10d714a6e88b30761fae22"
     api_address = 'http://api.openweathermap.org/data/2.5/forecast?lat={}&lon={}&appid={}'
     url = api_address.format(latitude, longitude, api_key)
     json_data = requests.get(url).json()
+
+    datetime_cur_utc = datetime + UTC_OFFSET
     if 'list' in json_data.keys():
         forecast_list = json_data['list']
         ind = 0

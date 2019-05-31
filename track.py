@@ -1,11 +1,13 @@
 import datetime
 import math
+import os
+import pickle
 
 from parameters import MAX_SLOPE_CHANGE, MAX_SECTION_LENGTH
 from utils import timeit
 import matplotlib.pyplot as plt
 import pandas as pd
-from environment_data import get_solar_radiation
+from environment_data import get_solar_radiation, get_solar_radiation_from_json, get_solar_radiation_json
 import copy
 
 
@@ -146,9 +148,6 @@ class Track:
 
         self.sections = new_sections
         print("After combining {} sections".format(len(self.sections)))
-        # self.sections.to_csv("logs/sections_params "
-        #                      + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
-        #                      + ".csv", sep=";")
 
     @timeit
     def compute_arrival_times(self, start_datetime, drive_time_bounds, speeds):  # TODO call while optimizing
@@ -168,6 +167,27 @@ class Track:
 
     @timeit
     def compute_weather_params(self):
+        """Loads stored weather values for testing model in same condition"""
+        if os.path.isfile("solar_radiation_data_" + str(len(self.sections)) + ".pickle"):
+            with open("solar_radiation_data_" + str(len(self.sections)) + ".pickle", "rb") as f:
+                solar_radiation_data = pickle.load(f)
+            for i in range(len(self.sections)):
+                datetime_cur = self.sections.iloc[i].arrival_time
+                self.sections.at[i, "solar_radiation"] = get_solar_radiation_from_json(solar_radiation_data[i],
+                                                                                       datetime_cur)
+        else:
+            solar_radiation_data = []
+            for i in range(len(self.sections)):
+                latitude, longitude = self.sections.iloc[i].coordinates[0], self.sections.iloc[i].coordinates[1]
+                json_data = get_solar_radiation_json(latitude, longitude)
+                datetime_cur = self.sections.iloc[i].arrival_time
+                self.sections.at[i, "solar_radiation"] = get_solar_radiation_from_json(json_data, datetime_cur)
+                solar_radiation_data.append(json_data)
+            with open("solar_radiation_data_" + str(len(self.sections)) + ".pickle", "wb") as f:
+                pickle.dump(solar_radiation_data, f)
+
+    @timeit
+    def compute_weather_params_pure(self):
         for i in range(len(self.sections)):
             latitude, longitude = self.sections.iloc[i].coordinates[0], self.sections.iloc[i].coordinates[1]
             datetime_cur = self.sections.iloc[i].arrival_time
