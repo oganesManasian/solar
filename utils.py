@@ -50,12 +50,12 @@ def check_net_connection():
     return False
 
 
-def draw_solution(optimal_speeds):
+def draw_solution(optimal_speeds, title=""):
     speeds = list(optimal_speeds[:])
     speeds.append(speeds[-1])
     plt.step(range(len(speeds)), speeds, where='post')
     plt.grid()
-    plt.title("Оптимальная скорость")
+    plt.title("Оптимальная скорость" + " " + title)
     plt.xlabel("Номер секции")
     # plt.xticks(range(len(optimal_speeds)), rotation=90)
     plt.xticks(ticks=[v for v in range(len(optimal_speeds)) if v % 5 == 0],

@@ -3,17 +3,17 @@ from parameters import PENALTY_VALUE, MAX_SPEED
 from track import Track
 
 
-def compute_loss_func(section_speeds: list, track: Track):
+def compute_loss_func(speed_vector: list, track: Track):
     """Computes loss function according to energy levels and section speeds"""
-    return sum([track.sections.loc[i].length / section_speeds[i] for i in range(len(track.sections))])
+    return sum([track.sections.loc[i].length / speed_vector[i] for i in range(len(track.sections))])
 
 
-def compute_total_penalty(section_speeds: list, track: Track, continuous=True):
+def compute_total_penalty(speed_vector: list, track: Track, continuous=True):
     """Computes total penalty according to energy levels and section speeds"""
-    energy_levels = compute_energy_levels(track, section_speeds)
+    energy_levels = compute_energy_levels(track, speed_vector)
     energy_level_penalty = compute_energy_level_penalty(energy_levels, continuous)
 
-    speed_penalty = compute_speed_penalty(section_speeds, continuous)
+    speed_penalty = compute_speed_penalty(speed_vector, continuous)
 
     total_penalty = energy_level_penalty + speed_penalty
     return total_penalty

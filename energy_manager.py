@@ -12,17 +12,17 @@ from parameters import VEHICLE_FRONT_AREA, FRONTAL_DENSITY_RATE, VEHICLE_PANEL_A
 DEBUG_FUNC_RESULTS = False
 
 
-def compute_energy_levels(track: Track, section_speeds: list):
+def compute_energy_levels(track: Track, speed_vector: list):
     """Computes energy level of each sector"""
     energy_levels = [BATTER_CHARGE_MAX]
     for i in range(len(track.sections)):
-        energy_income = compute_energy_income(section_speeds[i],
+        energy_income = compute_energy_income(speed_vector[i],
                                               track.sections.loc[i].solar_radiation,
                                               VEHICLE_PANEL_AREA,
                                               track.sections.loc[i].slope_angle,
                                               track.sections.loc[i].length,
                                               EFFICIENCY_INCOME)
-        energy_outcome = compute_energy_outcome(section_speeds[i],
+        energy_outcome = compute_energy_outcome(speed_vector[i],
                                                 track.sections.loc[i].length,
                                                 AIR_DENSITY,
                                                 VEHICLE_FRONT_AREA,
@@ -41,7 +41,7 @@ def compute_energy_levels(track: Track, section_speeds: list):
     return energy_levels
 
 
-def compute_energy_levels_full(track: Track, section_speeds: list):
+def compute_energy_levels_full(track: Track, speed_vector: list):
     """Computes energy level, energy income and outcome on each sector"""
     energy_levels = [BATTER_CHARGE_MAX]
     energy_incomes = [0]
@@ -68,7 +68,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                          "distance_covered"])
 
     for i in range(len(track.sections)):
-        energy_income = compute_energy_income(section_speeds[i],
+        energy_income = compute_energy_income(speed_vector[i],
                                               track.sections.loc[i].solar_radiation,
                                               VEHICLE_PANEL_AREA,
                                               track.sections.loc[i].slope_angle,
@@ -76,7 +76,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                               EFFICIENCY_INCOME)
         energy_incomes.append(energy_income)
 
-        energy_outcome = compute_energy_outcome(section_speeds[i],
+        energy_outcome = compute_energy_outcome(speed_vector[i],
                                                 track.sections.loc[i].length,
                                                 AIR_DENSITY,
                                                 VEHICLE_FRONT_AREA,
@@ -111,7 +111,7 @@ def compute_energy_levels_full(track: Track, section_speeds: list):
                                                EFFICIENCY_OUTCOME,
                                                energy_outcome,
                                                track.sections.loc[i].coordinates,
-                                               section_speeds[i],
+                                               speed_vector[i],
                                                track.sections.loc[i].arrival_time,
                                                track.sections.loc[i].length_sum]
 
