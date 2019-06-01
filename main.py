@@ -2,7 +2,6 @@ from parameters import INIT_SPEED, START_DATETIME, DRIVE_TIME_BOUNDS, OPTIMAL_SP
 from track import Track
 import energy_manager
 import optimization_methods
-import matplotlib.pyplot as plt
 from loss_func import compute_loss_func, compute_total_penalty
 import datetime
 import os
@@ -18,7 +17,7 @@ if not os.path.isdir("logs"):
     os.mkdir("logs")
 
 # Load race track
-track = Track()
+track = Track(max_section_length=30000, max_section_slope_angle=0.15)
 track.load_track_from_csv("data/track_Australia.csv")
 # track.preprocess_track()
 # track.draw_track_altitudes("График высот маршрута до предобработки")
@@ -37,15 +36,16 @@ test_speeds = [1] * len(track.sections)
 energy_levels_test = energy_manager.compute_energy_levels(track, test_speeds)
 assert (energy_levels_test[-1] >= 0), "Too little energy to cover the distance!"
 
-# Solve with constant speed
-base_speed = optimization_methods.bruteforce_method(compute_loss_func,
-                                                    compute_total_penalty,
-                                                    np.linspace(OPTIMAL_SPEED_BOUNDS[0], OPTIMAL_SPEED_BOUNDS[1],
-                                                                (OPTIMAL_SPEED_BOUNDS[1] - OPTIMAL_SPEED_BOUNDS[0]) * 4),
-                                                    track,
-                                                    show_info=True)
-print("Base speed:", base_speed)
-base_speed_vector = [base_speed] * len(track.sections)
+# Find initial approximation
+base_speed_vector = optimization_methods.find_initial_approximation_grid(compute_loss_func,
+                                                                         compute_total_penalty,
+                                                                         track,
+                                                                         # low_speed_range=speed_range
+                                                                         high_speed_range=range(25, 35),
+                                                                         low_speed_range=range(15, 20),
+                                                                         n_range=range(1, int(
+                                                                             np.ceil(len(track.sections) * 0.1))),
+                                                                         )
 track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, base_speed_vector)
 track.compute_weather_params()
 # track.draw_track_features("Constant speed")
@@ -60,6 +60,7 @@ optimal_speeds = optimization_methods.exterior_penalty_method(func=compute_loss_
                                                               args=track,
                                                               eps=1,
                                                               tol=1e-3,
+                                                              max_step=12,
                                                               show_info=True)
 
 print("Optimization result:", optimal_speeds)
@@ -87,4 +88,3 @@ model_params = model_data["params"]
 model_params.to_csv("logs/model_params "
                     + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
                     + ".csv", sep=";")
-
