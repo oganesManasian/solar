@@ -3,6 +3,7 @@ import time
 import requests
 import matplotlib.pyplot as plt
 
+
 def timeit(method):
     def timed(*args, **kwards):
         start_time = time.time()
@@ -50,12 +51,12 @@ def check_net_connection():
     return False
 
 
-def draw_solution(optimal_speeds, title=""):
+def draw_solution(optimal_speeds, title="Оптимальная скорость"):
     speeds = list(optimal_speeds[:])
     speeds.append(speeds[-1])
     plt.step(range(len(speeds)), speeds, where='post')
     plt.grid()
-    plt.title("Оптимальная скорость" + " " + title)
+    plt.title(title)
     plt.xlabel("Номер секции")
     # plt.xticks(range(len(optimal_speeds)), rotation=90)
     plt.xticks(ticks=[v for v in range(len(optimal_speeds)) if v % 5 == 0],
@@ -63,7 +64,7 @@ def draw_solution(optimal_speeds, title=""):
                rotation=90)
     plt.ylabel("Скорость (м/с)")
     figure = plt.gcf()
-    figure.set_size_inches(12, 8)
+    figure.set_size_inches(9, 8)
     plt.tight_layout()
     plt.savefig("logs/Optimal speed "
                 + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
@@ -88,6 +89,7 @@ def draw_speed_solar_radiation_relation(optimal_speeds, solar_radiation_levels):
     plt.grid()
     figure = plt.gcf()
     figure.set_size_inches(12, 8)
+    plt.tight_layout()
     plt.savefig("logs/Speed and solar radiation relationship "
                 + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
                 + ".png")

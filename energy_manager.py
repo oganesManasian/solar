@@ -150,6 +150,7 @@ def draw_energy_levels(energy_levels: list, energy_incomes: list, energy_outcome
     plt.grid()
     figure = plt.gcf()
     figure.set_size_inches(12, 8)
+    plt.tight_layout()
     plt.savefig("logs/Energy flow "
                 + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
                 + ".png")

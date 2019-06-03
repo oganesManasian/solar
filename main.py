@@ -27,6 +27,7 @@ track.combine_points_to_sections(show_info=False)
 init_speeds = [INIT_SPEED] * len(track.sections)
 track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, init_speeds)
 track.compute_weather_params()
+# track.sections.solar_radiation = track.sections.solar_radiation * 1.18  # Simulate October conditions
 # track.draw_track_features("Ключевые параметры маршрута")
 
 # track.sections = track.sections[:10]  # Taking only small part of track for speeding up tests
@@ -48,7 +49,6 @@ base_speed_vector = optimization_methods.find_initial_approximation_grid(compute
                                                                          )
 track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, base_speed_vector)
 track.compute_weather_params()
-# track.draw_track_features("Constant speed")
 
 # Optimize speed
 print("Init loss:", compute_loss_func(base_speed_vector, track),
