@@ -30,7 +30,7 @@ def get_solar_radiation_json(latitude, longitude):
 
 
 def get_solar_radiation_from_json(json_data, datetime):
-    """Find most suitable forecast"""
+    """Finds most suitable forecast"""
     datetime_cur_utc = datetime + UTC_OFFSET
     if 'forecasts' in json_data.keys():
         forecast_list = json_data['forecasts']

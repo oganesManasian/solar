@@ -149,7 +149,7 @@ class Track:
         self.sections = new_sections
         print("After combining {} sections".format(len(self.sections)))
 
-    @timeit
+    # @timeit
     def compute_arrival_times(self, start_datetime, drive_time_bounds, speeds):  # TODO call while optimizing
         """Computes time when solar car will arrive to each section"""
         datetime_cur = copy.deepcopy(start_datetime)
@@ -172,9 +172,8 @@ class Track:
             with open("solar_radiation_data_" + str(len(self.sections)) + ".pickle", "rb") as f:
                 solar_radiation_data = pickle.load(f)
             for i in range(len(self.sections)):
-                datetime_cur = self.sections.iloc[i].arrival_time
-                self.sections.at[i, "solar_radiation"] = get_solar_radiation_from_json(solar_radiation_data[i],
-                                                                                       datetime_cur)
+                self.sections.at[i, "solar_radiation"] = \
+                    get_solar_radiation_from_json(solar_radiation_data[i], self.sections.iloc[i].arrival_time)
         else:
             solar_radiation_data = []
             for i in range(len(self.sections)):

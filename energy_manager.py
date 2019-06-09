@@ -130,7 +130,7 @@ def draw_energy_levels(energy_levels: list, energy_incomes: list, energy_outcome
     plt.xlabel("Номер секции")
     plt.ylabel("Количество энергии (Дж)")
 
-    plt.plot(range(len(energy_levels)), energy_levels, "b", label='Заряд батареи')
+    plt.plot(range(len(energy_levels)), energy_levels, "b", label='Заряд батареи', linewidth=3.0)
 
     # Starting from 1 due to full charge of battery at beginning of race
     violation_points = [(x + 1, y) for (x, y) in enumerate(energy_levels[1:])
@@ -139,9 +139,9 @@ def draw_energy_levels(energy_levels: list, energy_incomes: list, energy_outcome
         x, y = zip(*violation_points)
         plt.plot(x, y, "ro", label="Violations")
 
-    plt.plot(range(len(energy_incomes)), energy_incomes, "g-", label='Пополнение энергии')
+    plt.plot(range(len(energy_incomes)), energy_incomes, "g-", label='Пополнение энергии', linewidth=3.0)
 
-    plt.plot(range(len(energy_outcomes)), energy_outcomes, "r-", label='Расход энергии')
+    plt.plot(range(len(energy_outcomes)), energy_outcomes, "r-", label='Расход энергии', linewidth=3.0)
 
     plt.xticks(ticks=[v for v in range(len(energy_levels)) if v % 5 == 0],
                labels=[v for v in range(len(energy_levels)) if v % 5 == 0],
