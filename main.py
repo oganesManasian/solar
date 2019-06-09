@@ -1,3 +1,5 @@
+# coding=utf-8
+import global_optimization
 from parameters import INIT_SPEED, START_DATETIME, DRIVE_TIME_BOUNDS, OPTIMAL_SPEED_BOUNDS
 from track import Track
 import energy_manager
@@ -13,78 +15,95 @@ from utils import draw_solution, draw_speed_solar_radiation_relation
 #         'size': 14}
 # plt.rc('font', **font)
 
-if not os.path.isdir("logs"):
-    os.mkdir("logs")
 
-# Load race track
-track = Track(max_section_length=30000, max_section_slope_angle=0.15)
-track.load_track_from_csv("data/track_Australia.csv")
-# track.preprocess_track()
-# track.draw_track_altitudes("График высот маршрута до предобработки")
-track.combine_points_to_sections(show_info=False)
-# track.draw_track_altitudes("График высот маршрута после предобработки")
+def main(func_type="original"):
+    if not os.path.isdir("logs"):
+        os.mkdir("logs")
 
-init_speeds = [INIT_SPEED] * len(track.sections)
-track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, init_speeds)
-track.compute_weather_params()
-# track.sections.solar_radiation = track.sections.solar_radiation * 1.18  # Simulate October conditions
-# track.draw_track_features("Ключевые параметры маршрута")
+    # Load race track
+    track = Track(max_section_length=30000, max_section_slope_angle=0.15)
+    track.load_track_from_csv("data/track_Australia.csv")
+    # track.preprocess_track()
+    # track.draw_track_altitudes("График высот маршрута до предобработки")
+    track.combine_points_to_sections()
+    # track.draw_track_altitudes("График высот маршрута после предобработки")
 
-# track.sections = track.sections[:10]  # Taking only small part of track for speeding up tests
+    init_speeds = [INIT_SPEED] * len(track.sections)
+    track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, init_speeds)
+    track.compute_weather_params()
+    # track.sections.solar_radiation = track.sections.solar_radiation * 1.18  # Simulate October conditions
+    # track.draw_track_features("Ключевые параметры маршрута")
 
-# Test that optimization is possible
-test_speeds = [1] * len(track.sections)
-energy_levels_test = energy_manager.compute_energy_levels(track, test_speeds)
-assert (energy_levels_test[-1] >= 0), "Too little energy to cover the distance!"
+    # track.sections = track.sections[:10]  # Taking only small part of track for speeding up tests
 
-# Find initial approximation
-base_speed_vector = optimization_methods.find_initial_approximation_grid(compute_loss_func,
-                                                                         compute_total_penalty,
-                                                                         track,
-                                                                         # low_speed_range=speed_range
-                                                                         high_speed_range=range(25, 35),
-                                                                         low_speed_range=range(15, 20),
-                                                                         n_range=range(1, int(
-                                                                             np.ceil(len(track.sections) * 0.1))),
-                                                                         )
-track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, base_speed_vector)
-track.compute_weather_params()
+    # Test that optimization is possible
+    test_speeds = [1] * len(track.sections)
+    energy_levels_test = energy_manager.compute_energy_levels(track, test_speeds)
+    assert (energy_levels_test[-1] >= 0), "Too little energy to cover the distance!"
 
-# Optimize speed
-print("Init loss:", compute_loss_func(base_speed_vector, track),
-      "\nInit penalty:", compute_total_penalty(base_speed_vector, track, continuous=False))
+    # Find initial approximation
+    base_speed_vector = optimization_methods.grid_search(compute_loss_func,
+                                                         compute_total_penalty,
+                                                         track,
+                                                         func_type="original",
+                                                         # low_speed_range=speed_range
+                                                         high_speed_range=range(25, 36),
+                                                         low_speed_range=range(15, 20),
+                                                         n_range=range(1, int(
+                                                             np.ceil(len(track.sections) * 0.1))),
+                                                         )
 
-optimal_speeds = optimization_methods.exterior_penalty_method(func=compute_loss_func,
-                                                              penalty_func=compute_total_penalty,
-                                                              x0=base_speed_vector,
-                                                              args=track,
-                                                              eps=1,
-                                                              tol=1e-3,
-                                                              max_step=12,
-                                                              show_info=True)
+    # base_speed_vector = global_optimization.genetic_algorithm(compute_loss_func,
+    #                                                           compute_total_penalty,
+    #                                                           init_speeds,
+    #                                                           track,
+    #                                                           func_type="original",
+    #                                                           max_epoch=5
+    #                                                           )
+    track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, base_speed_vector)
+    track.compute_weather_params()
 
-print("Optimization result:", optimal_speeds)
-print("Final loss:", compute_loss_func(optimal_speeds, track),
-      "\nFinal penalty:", compute_total_penalty(optimal_speeds, track, continuous=False))
-print("Total travel time:", round(compute_loss_func(optimal_speeds, track) / 3600, 2), "hours")
+    # Optimize speed
+    print("Init loss:", compute_loss_func(base_speed_vector, track),
+          "\nInit penalty:", compute_total_penalty(base_speed_vector, track, func_type="original"))
 
-# Try to find better solution in point viсinity
-optimization_methods.random_change(optimal_speeds, compute_loss_func, compute_total_penalty, track, iter_num=100)
+    optimal_speeds = optimization_methods.penalty_method(func=compute_loss_func,
+                                                         penalty_func=compute_total_penalty,
+                                                         x0=base_speed_vector,
+                                                         args=track,
+                                                         func_type=func_type,
+                                                         eps=1,
+                                                         tol=1e-3,
+                                                         max_step=20,
+                                                         show_info=True)
 
-# Solution visualisation
-draw_solution(optimal_speeds)
+    # print("Optimization result:", optimal_speeds)
+    print("Final loss:", compute_loss_func(optimal_speeds, track),
+          "\nFinal penalty:", compute_total_penalty(optimal_speeds, track, func_type="original"))
+    print("Total travel time:", round(compute_loss_func(optimal_speeds, track) / 3600, 2), "hours")
 
-# Find relation between solar radiation and vehicle speed
-solar_radiation_levels = track.sections.solar_radiation
-draw_speed_solar_radiation_relation(optimal_speeds, solar_radiation_levels)
+    # Try to find better solution in point vicinity
+    optimization_methods.random_change_method(optimal_speeds, compute_loss_func, compute_total_penalty, track,
+                                              change_koef=1, iter_num=100)
 
-# Save params about model
-model_data = energy_manager.compute_energy_levels_full(track, optimal_speeds)
-energy_manager.draw_energy_levels(energy_levels=model_data["levels"],
-                                  energy_incomes=model_data["incomes"],
-                                  energy_outcomes=model_data["outcomes"])
+    # Solution visualisation
+    draw_solution(optimal_speeds)
 
-model_params = model_data["params"]
-model_params.to_csv("logs/model_params "
-                    + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
-                    + ".csv", sep=";")
+    # Find relation between solar radiation and vehicle speed
+    solar_radiation_levels = track.sections.solar_radiation
+    draw_speed_solar_radiation_relation(optimal_speeds, solar_radiation_levels)
+
+    # Save params about model
+    model_data = energy_manager.compute_energy_levels_full(track, optimal_speeds)
+    energy_manager.draw_energy_levels(energy_levels=model_data["levels"],
+                                      energy_incomes=model_data["incomes"],
+                                      energy_outcomes=model_data["outcomes"])
+
+    model_params = model_data["params"]
+    model_params.to_csv("logs/model_params "
+                        + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))
+                        + ".csv", sep=";")
+
+
+if __name__ == "__main__":
+    main()

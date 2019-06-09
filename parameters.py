@@ -3,17 +3,18 @@ import datetime
 # Schedule
 # UTC_OFFSET = datetime.datetime.utcnow() - datetime.datetime.now()
 UTC_OFFSET = datetime.timedelta(hours=-10.5)  # Adelaide utc offset
-START_DATE = datetime.date.today() + datetime.timedelta(days=1)
 # START_DATE = datetime.date(2019, 10, 13) - real competition start date
+# START_DATE = datetime.date.today() + datetime.timedelta(days=1)
+START_DATE = datetime.date(day=9, month=6, year=2019) + datetime.timedelta(days=1)
 START_TIME = datetime.time(8, 30, 0)
 START_DATETIME = datetime.datetime.combine(START_DATE, START_TIME)
 DRIVE_TIME_BOUNDS = [8, 17]
 
 # Optimization
-INIT_SPEED = 15
+INIT_SPEED = 17
 OPTIMAL_SPEED_BOUNDS = [15, 25]
 MAX_SPEED = 40
-PENALTY_VALUE = 36000
+CONSTANT_PENALTY_VALUE = 3600
 
 # Track
 # 104 sections
