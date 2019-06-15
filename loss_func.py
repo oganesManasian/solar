@@ -46,7 +46,7 @@ def box_penalty_func_factory(a, b, func_type):
         width = b - a
         shift = a / (width / 2) + 1
 
-        def inner(x, koef=10, deg=8):
+        def inner(x, koef=1, deg=30):
             return koef * (1 / (width / 2) * x - shift) ** deg
 
     elif func_type is "constant":

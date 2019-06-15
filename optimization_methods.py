@@ -112,7 +112,7 @@ class MinimizeCallback(object):
 
     def __call__(self, x):
         if self.show_info:
-            print("Iteration:", self.iter, "Loss function value:", self.loss_func(x, self.args))
+            print("Iteration:", self.iter, "Loss function value:", round(self.loss_func(x, self.args), 3))
         self.iter += 1
 
 

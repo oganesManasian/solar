@@ -202,6 +202,7 @@ class Track:
         plt.grid()
         figure = plt.gcf()
         figure.set_size_inches(12, 8)
+        plt.tight_layout()
         plt.plot(distance_covered, altitudes)
         plt.savefig("logs/" + title + " "
                     + str(datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S"))

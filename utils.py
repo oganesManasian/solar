@@ -84,7 +84,7 @@ def draw_speed_solar_radiation_relation(optimal_speeds, solar_radiation_levels):
     plt.subplot(2, 1, 2)
     # plt.title("Солнечная радиация")
     plt.xlabel("Номер секции")
-    plt.ylabel("Уровень солнечной радиации (Вт/м^2)")
+    plt.ylabel("Уровень солнечной\n радиации (Вт/м^2)")
     plt.plot(range(len(optimal_speeds)), solar_radiation_levels, linewidth=3.0)
     plt.grid()
     figure = plt.gcf()

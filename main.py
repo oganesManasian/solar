@@ -1,6 +1,5 @@
 # coding=utf-8
-import global_optimization
-from parameters import INIT_SPEED, START_DATETIME, DRIVE_TIME_BOUNDS, OPTIMAL_SPEED_BOUNDS
+from parameters import INIT_SPEED, START_DATETIME, DRIVE_TIME_BOUNDS
 from track import Track
 import energy_manager
 import optimization_methods
@@ -9,14 +8,13 @@ import datetime
 import os
 import numpy as np
 from utils import draw_solution, draw_speed_solar_radiation_relation
+import matplotlib.pyplot as plt
 
-# font = {'family': 'normal',
-#         # 'weight': 'bold',
-#         'size': 14}
-# plt.rc('font', **font)
+font = {'size': 22}
+plt.rc('font', **font)
 
 
-def main(func_type="original"):
+def main(init_precision="3dim", func_type="original"):
     if not os.path.isdir("logs"):
         os.mkdir("logs")
 
@@ -42,24 +40,19 @@ def main(func_type="original"):
     assert (energy_levels_test[-1] >= 0), "Too little energy to cover the distance!"
 
     # Find initial approximation
-    base_speed_vector = optimization_methods.grid_search(compute_loss_func,
-                                                         compute_total_penalty,
-                                                         track,
-                                                         func_type="original",
-                                                         # low_speed_range=speed_range
-                                                         high_speed_range=range(25, 36),
-                                                         low_speed_range=range(15, 20),
-                                                         n_range=range(1, int(
-                                                             np.ceil(len(track.sections) * 0.1))),
-                                                         )
-
-    # base_speed_vector = global_optimization.genetic_algorithm(compute_loss_func,
-    #                                                           compute_total_penalty,
-    #                                                           init_speeds,
-    #                                                           track,
-    #                                                           func_type="original",
-    #                                                           max_epoch=5
-    #                                                           )
+    args = [compute_loss_func, compute_total_penalty, track]
+    if init_precision == "1dim":
+        kwargs = dict(func_type="original",
+                      low_speed_range=np.linspace(start=15, stop=25, num=40))
+    elif init_precision == "3dim":
+        kwargs = dict(func_type="original",
+                      low_speed_range=range(15, 20),
+                      high_speed_range=range(25, 36),
+                      n_range=range(1, int(np.ceil(len(track.sections) * 0.1))))
+    else:
+        assert False, "Not implemented such type of initial precision"
+    base_speed_vector = optimization_methods.grid_search(*args, **kwargs)
+    draw_solution(base_speed_vector, title="Начальное приближение")
     track.compute_arrival_times(START_DATETIME, DRIVE_TIME_BOUNDS, base_speed_vector)
     track.compute_weather_params()
 
